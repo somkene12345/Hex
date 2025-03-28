@@ -1,3 +1,3 @@
 # Hex AI
 
-Progressive Web App that uses the Grok LLM to answer questions, write code and more.
+Progressive Web App that uses the Groq API to answer questions, write code and more.
