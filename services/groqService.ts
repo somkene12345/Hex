@@ -1,7 +1,7 @@
 import { ChatGroq } from "@langchain/groq";
 
 const GROQ_API_KEY = "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"; // Store securely
-const GROQ_MODEL = "mixtral-8x7b-32768"; // Choose the appropriate model
+const GROQ_MODEL = "llama-3.3-70b-versatile"; // Choose the appropriate model
 const TEMPERATURE = 0.7; // Adjust for creativity
 
 // Initialize the chat model

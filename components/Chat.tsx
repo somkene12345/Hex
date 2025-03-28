@@ -9,93 +9,41 @@ import {
   KeyboardAvoidingView,
   Platform,
   Linking,
+  Pressable,
+  Clipboard,
+  Alert,
+  Image, // Add this import
 } from "react-native";
 import { fetchGroqResponse } from "../services/groqService";
-import { Ionicons } from "@expo/vector-icons"; // For icons
+import { Ionicons } from "@expo/vector-icons";
 import Markdown from "react-native-markdown-display";
-
-
-// Function to create a clickable link
-const renderLink = (url: string, text: string) => {
-    return <Text style={{ color: "blue", textDecorationLine: "underline" }} onPress={() => Linking.openURL(url)}>{text}</Text>;
-  };
-  
-  const renderTable = (tableString: string) => {
-    const rows = tableString.trim().split("\n").map(row => row.split("|"));
-    return (
-      <View style={{ borderWidth: 1, borderColor: "#ccc", marginVertical: 5 }}>
-        {rows.map((row, i) => (
-            <View key={`row-${i}`} style={{ flexDirection: "row" }}>
-  {row.map((cell, j) => (
-    <Text key={`cell-${i}-${j}`} style={{ borderWidth: 1, padding: 5, flex: 1 }}>
-      {cell.trim()}
-    </Text>
-  ))}
-</View>
-
-        ))}
-      </View>
-    );
-  };
-
-
-
-// Function to format AI output into readable Markdown
-const formatText = (text: string): JSX.Element => {
-    const parts: (string | JSX.Element)[] = [];
-    
-    // Handle markdown-style links
-    text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, (_, text, url) => {
-      parts.push(renderLink(url, text));
-      return ""; // Remove link from the string
-    });
-  
-    // Handle markdown-style tables
-    text = text.replace(/\|(.+?)\|/gs, (_, table) => {
-      parts.push(renderTable(table));
-      return ""; // Remove table from the string
-    });
-  
-    // Process remaining text formatting
-    text = text
-      .replace(/,0/g, ".") // End of sentence
-      .replace(/,-/g, "\n") // Line break
-      .replace(/,--/g, "\n\n") // Double line break
-      .replace(/,\*/g, "- ") // List item
-      .replace(/,1\./g, "1. ") // Numbered list item
-      .replace(/,b(.*?)\b/g, "**$1**") // Bold
-      .replace(/,i(.*?)\i/g, "*$1*") // Italic
-      .replace(/,u(.*?)\u/g, "__$1__") // Underline
-      .replace(/,bi(.*?)\bi/g, "***$1***") // Bold + Italic
-      .replace(/,code(.*?)\code/g, "```\n$1\n```") // Code block
-      .replace(/,quote(.*?)\quote/g, "> $1") // Quote
-      .replace(/,h1(.*?)\h1/g, "# $1") // Header 1
-      .replace(/,h2(.*?)\h2/g, "## $1") // Header 2
-      .replace(/,h3(.*?)\h3/g, "### $1") // Header 3
-      .replace(/,h4(.*?)\h4/g, "#### $1") // Header 4
-      .replace(/,h5(.*?)\h5/g, "##### $1") // Header 5
-      .replace(/,h6(.*?)\h6/g, "###### $1") // Header 6
-      .replace(/,--/g, "---\n"); // Horizontal rule
-  
-        // Preserve the remaining text if nothing else matched
-  if (text.trim()) {
-    parts.push(<Text key={`text-${parts.length}`}>{text}</Text>);
-}
-      return (
-        <View>
-          {parts}
-        </View>
-      );
-      
-  };
-  
-  
-  
-
 
 const Chat = () => {
   const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
   const [input, setInput] = useState("");
+
+  const copyToClipboard = (code: string) => {
+    Clipboard.setString(code);
+    Alert.alert("Copied!", "Code copied to clipboard");
+  };
+
+  const renderCodeBlock = ({ node, ...props }: any) => {
+    const code = node.children[0].children[0].value;
+    return (
+      <View style={markdownStyles.code_blockContainer}>
+        <Pressable
+          onPress={() => copyToClipboard(code)}
+          style={styles.copyButton}
+        >
+          <Ionicons name="copy-outline" size={16} color="#666" />
+          <Text style={styles.copyText}>Copy</Text>
+        </Pressable>
+        <View style={markdownStyles.code_block}>
+          <Text style={markdownStyles.code_blockText}>{code}</Text>
+        </View>
+      </View>
+    );
+  };
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -105,9 +53,7 @@ const Chat = () => {
     setInput("");
 
     const botResponse = await fetchGroqResponse(input);
-    const formattedResponse = formatText(botResponse); // Format AI output
-
-    const botMessage = { role: "bot", formattedText: formattedResponse, text: botResponse };
+    const botMessage = { role: "bot", text: botResponse };
     setMessages((prev) => [...prev, botMessage]);
   };
 
@@ -119,27 +65,52 @@ const Chat = () => {
       <FlatList
         data={messages}
         keyExtractor={(_, index) => index.toString()}
+        contentContainerStyle={styles.messagesContainer}
         renderItem={({ item }) => (
-          <View
-            style={[
-              styles.messageContainer,
-              item.role === "user" ? styles.userMessage : styles.botMessage,
-            ]}
-          >
-            <Markdown style={markdownStyles}>{item.text}</Markdown>
+          <View style={[
+            styles.messageWrapper,
+            item.role === "user" ? styles.userWrapper : styles.botWrapper
+          ]}>
+            {item.role === "bot" && (
+              <View style={styles.botAvatar}>
+                <Image
+                  source={{ uri: 'https://github.com/somkene12345/Hex/blob/main/assets/images/icon.png?raw=true' }}
+                  style={styles.botAvatarImage}
+                />
+              </View>
+            )}
+            <View style={[
+              styles.messageContent,
+              item.role === "user" ? styles.userContent : styles.botContent
+            ]}>
+              <Markdown 
+                style={markdownStyles}
+                rules={{
+                  code_block: renderCodeBlock
+                }}
+              >
+                {item.text}
+              </Markdown>
+            </View>
+            {item.role === "user" && (
+              <View style={styles.userAvatar}>
+                <Ionicons name="person" size={20} color="white" />
+              </View>
+            )}
           </View>
         )}
       />
 
-      {/* Input Bar */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
           value={input}
           onChangeText={setInput}
           placeholder="Type a message..."
+          placeholderTextColor="#999"
           onSubmitEditing={sendMessage}
           returnKeyType="send"
+          multiline
         />
         <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
           <Ionicons name="send" size={20} color="white" />
@@ -150,79 +121,146 @@ const Chat = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 10, backgroundColor: "#F5F5F5" },
-  messageContainer: {
-    paddingHorizontal: 10,
-    paddingVertical:2,
-    borderRadius: 8,
-    margin: 5,
+  container: {
+    flex: 1,
+    backgroundColor: "#FAFAFA",
+  },
+  messagesContainer: {
+    padding: 16,
+    paddingBottom: 80,
+  },
+  messageWrapper: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 12,
+    width: "100%",
+  },
+  botWrapper: {
+    justifyContent: "flex-start",
+  },
+  userWrapper: {
+    justifyContent: "flex-end",
+  },
+  messageContent: {
     maxWidth: "80%",
+    paddingVertical: 3,
+    paddingHorizontal: 16,
+    borderRadius: 18,
   },
-  userMessage: {
-    alignSelf: "flex-end",
-    backgroundColor: "#DCF8C6",
-    borderColor: "#A3D9A5",
-    borderWidth: 1,
+  botContent: {
+    backgroundColor: "transparent",
+    marginLeft: 8,
   },
-  botMessage: {
-    alignSelf: "flex-start",
+  userContent: {
     backgroundColor: "#EAEAEA",
-    borderColor: "#B0B0B0",
-    borderWidth: 1,
+    marginRight: 8,
+  },
+  botAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#E3F2FD",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+    overflow: 'hidden', // Ensures the image stays within the circular bounds
+  },
+  botAvatarImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  userAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#007AFF",
+    justifyContent: "center",
+    alignItems: "center",
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 25,
-    paddingHorizontal: 15,
-    margin: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: "#FFF",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#E0E0E0",
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
-  input: { flex: 1, paddingVertical: 12, fontSize: 16 , borderRadius:50},
-  sendButton: {
-    backgroundColor: "#007AFF",
-    padding: 10,
+  input: {
+    flex: 1,
+    backgroundColor: "#F5F5F5",
     borderRadius: 20,
-    marginLeft: 5,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 16,
+    maxHeight: 120,
+  },
+  sendButton: {
+    marginLeft: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#007AFF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  copyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 6,
+    backgroundColor: '#EEE',
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+    alignSelf: 'flex-end',
+    marginBottom: -1,
+  },
+  copyText: {
+    marginLeft: 4,
+    fontSize: 12,
+    color: '#666',
   },
 });
 
-// Markdown styles for better formatting
 const markdownStyles = StyleSheet.create({
-    heading1: { fontSize: 24, fontWeight: "bold", color: "#333" },
-    heading2: { fontSize: 20, fontWeight: "bold", color: "#555" },
-    heading3: { fontSize: 18, fontWeight: "bold", color: "#777" },
-    paragraph: { fontSize: 16, color: "#444", lineHeight: 24 },
-    strong: { fontWeight: "bold", color: "#000" },
-    em: { fontStyle: "italic", color: "#666" },
-    underline: { textDecorationLine: "underline" },
-    blockquote: {
-      fontSize: 16,
-      color: "#777",
-      fontStyle: "italic",
-      borderLeftWidth: 4,
-      borderLeftColor: "#CCC",
-      paddingLeft: 10,
-      marginVertical: 5,
-    },
-    code_inline: {
-      backgroundColor: "#EEE",
-      borderRadius: 4,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      fontFamily: "monospace",
-      fontSize: 14,
-      lineHeight: 20, // Prevents overlap
-    },
-    code_block: {
-      backgroundColor: "#EEE",
-      padding: 10,
-      borderRadius: 5,
+  body: {
+    color: "#333",
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  heading1: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#000",
+    marginVertical: 8,
+  },
+  heading2: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#000",
+    marginVertical: 6,
+  },
+  paragraph: {
+    fontSize: 16,
+    color: "#333",
+    lineHeight: 24,
+    marginVertical: 4,
+  },
+  link: {
+    color: "#007AFF",
+    textDecorationLine: "underline",
+  },
+  strong: {
+    fontWeight: "bold",
+  },
+  em: {
+    fontStyle: "italic",
+  },
+  code_inline: {
       fontFamily: "monospace",
       fontSize: 14,
       lineHeight: 22, // Ensures proper spacing
