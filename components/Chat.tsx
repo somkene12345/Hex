@@ -367,9 +367,18 @@ const markdownStyles = StyleSheet.create({
       lineHeight: 22, // Ensures proper spacing
       marginVertical: 5, // Adds spacing above/below
     },
-    link: { color: "#007AFF" },
-    image: { width: width * 0.3, height: width * 0.3 },
-    table: {
+    image: {
+        width: width * 0.7,  // Adjust width as needed
+        height: undefined,   // Let height adjust automatically
+        aspectRatio: 1,      // Maintain aspect ratio
+        maxWidth: '100%',    // Don't exceed container width
+        borderRadius: 8,     // Match your border radius
+        marginVertical: 8,
+        backgroundColor: '#f0f0f0',
+        alignSelf: 'center', // Center the image
+        overflow: 'hidden',  // Ensure borders clip the image
+      },
+          table: {
       borderWidth: 1,
       borderColor: "#DDD",
       padding: 5,
