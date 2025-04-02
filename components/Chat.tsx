@@ -372,20 +372,15 @@ const markdownStyles = StyleSheet.create({
     image: {
         width: width * 0.5,          // 50% of screen width
         maxWidth: width * 0.7,       // But no more than 70% width
-        height: width * 0.5,         // Fixed height (will respect aspect ratio via resizeMode)
         borderRadius: 8,
         backgroundColor: '#f0f0f0',
         resizeMode: 'contain',       // Ensures whole image fits while maintaining ratio
         alignSelf: 'center',         // Centers the image
         marginVertical: 8,
-        ...Platform.select({
-          web: {
             objectFit: 'contain',    // Web equivalent of resizeMode
             height: 'auto',         // Let browser calculate height
             maxHeight: width * 0.7, // Prevent vertical overflow
           },
-        }),
-      },
           table: {
       borderWidth: 1,
       borderColor: "#DDD",
