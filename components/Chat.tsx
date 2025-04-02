@@ -378,7 +378,7 @@ const markdownStyles = StyleSheet.create({
         alignSelf: 'center',         // Centers the image
         marginVertical: 8,
             objectFit: 'contain',    // Web equivalent of resizeMode
-            height: 'auto',         // Let browser calculate height
+            height: '50%',         // Let browser calculate height
             maxHeight: width * 0.7, // Prevent vertical overflow
           },
           table: {
