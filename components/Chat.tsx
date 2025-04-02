@@ -368,7 +368,7 @@ const markdownStyles = StyleSheet.create({
       marginVertical: 1, // Adds spacing above/below
     },
     image: {
-        width: '100%',                  // Take full container width
+        width: width * 0.5,                  // Take full container width
         maxWidth: width * 0.7,          // But no more than 70% of screen width
         height: width * 0.5,            // Set a reasonable fixed height
         borderRadius: 8,
