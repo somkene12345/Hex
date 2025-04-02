@@ -376,6 +376,7 @@ const markdownStyles = StyleSheet.create({
         resizeMode: 'stretch',
         alignSelf: 'center',            // Centers the image horizontally
         marginVertical: 8,
+        objectFit: 'cover',
       },
           table: {
       borderWidth: 1,
