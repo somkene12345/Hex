@@ -22,78 +22,6 @@ import Markdown from "react-native-markdown-display";
 
 const {width} = Dimensions.get('window');
 
-// First declare markdownStyles to avoid reference errors
-const markdownStyles = StyleSheet.create({
-  body: {
-    color: "#333",
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  heading1: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#000",
-    marginVertical: 8,
-  },
-  heading2: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#000",
-    marginVertical: 6,
-  },
-  paragraph: {
-    fontSize: 16,
-    color: "#333",
-    lineHeight: 24,
-    marginVertical: 4,
-  },
-  link: {
-    color: "#007AFF",
-    textDecorationLine: "underline",
-  },
-  strong: {
-    fontWeight: "bold",
-  },
-  em: {
-    fontStyle: "italic",
-  },
-  code_inline: {
-    fontFamily: "monospace",
-    fontSize: 14,
-    lineHeight: 22,
-    marginVertical: 5,
-  },
-  code_block: {
-    backgroundColor: "#f5f5f5",
-    padding: 12,
-    borderRadius: 4,
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-  },
-  code_blockText: {
-    fontFamily: "monospace",
-    fontSize: 14,
-  },
-  code_blockContainer: {
-    marginVertical: 8,
-  },
-  imageContainer: {
-    marginVertical: 8,
-    alignSelf: 'center',
-    maxWidth: '100%',
-  },
-  image: {
-    borderRadius: 8,
-    backgroundColor: '#f0f0f0',
-    resizeMode: 'contain',
-  },
-  table: {
-    borderWidth: 1,
-    borderColor: "#DDD",
-    padding: 5,
-    marginVertical: 5,
-  },
-});
 
 const Chat = () => {
   const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
@@ -102,6 +30,7 @@ const Chat = () => {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  // Auto-scroll when new messages arrive
   useEffect(() => {
     if (messages.length > 0) {
       scrollToBottom();
@@ -118,6 +47,7 @@ const Chat = () => {
     const contentHeight = event.nativeEvent.contentSize.height;
     const layoutHeight = event.nativeEvent.layoutMeasurement.height;
 
+    // Show scroll button if not near bottom
     if (contentHeight - (offsetY + layoutHeight) > 300) {
       showScrollButton || showScrollBtn();
     } else {
@@ -167,51 +97,6 @@ const Chat = () => {
     );
   };
 
-  const renderImage = ({ node, ...props }: any) => {
-    const uri = node.attributes.src;
-    const [imageSize, setImageSize] = useState({ 
-      width: width * 0.7, 
-      height: width * 0.7 
-    });
-  
-    useEffect(() => {
-      if (uri) {
-        Image.getSize(uri, (imgWidth, imgHeight) => {
-          const ratio = imgWidth / imgHeight;
-          const maxWidth = width * 0.7;
-          const calculatedHeight = maxWidth / ratio;
-          setImageSize({
-            width: maxWidth,
-            height: Math.min(calculatedHeight, width * 0.9) // Cap height
-          });
-        }, () => {
-          // Fallback if image size can't be determined
-          setImageSize({
-            width: width * 0.7,
-            height: width * 0.7
-          });
-        });
-      }
-    }, [uri]);
-  
-    return (
-      <View style={markdownStyles.imageContainer}>
-        <Image
-          source={{ uri }}
-          style={[
-            markdownStyles.image,
-            { 
-              width: imageSize.width, 
-              height: imageSize.height,
-              maxWidth: '100%'
-            }
-          ]}
-          resizeMode="contain"
-        />
-      </View>
-    );
-  };
-
   const sendMessage = async () => {
     if (!input.trim()) return;
 
@@ -236,43 +121,44 @@ const Chat = () => {
         keyExtractor={(_, index) => index.toString()}
         contentContainerStyle={styles.messagesContainer}
         renderItem={({ item }) => (
-          <View style={[
-              styles.messageWrapper,
-              item.role === "user" ? styles.userWrapper : styles.botWrapper
-            ]}>
-              {item.role === "bot" && (
-                <View style={styles.botAvatar}>
-                  <Image
-                    source={{ uri: 'https://github.com/somkene12345/Hex/blob/main/assets/images/icon.png?raw=true' }}
-                    style={styles.botAvatarImage}
-                  />
-                </View>
-              )}
-              <View style={[
-                styles.messageContent,
-                item.role === "user" ? styles.userContent : styles.botContent
+
+            <View style={[
+                styles.messageWrapper,
+                item.role === "user" ? styles.userWrapper : styles.botWrapper
               ]}>
-                <Markdown 
-                  style={markdownStyles}
-                  rules={{
-                    code_block: renderCodeBlock,
-                    image: renderImage
-                  }}
-                >
-                  {item.text}
-                </Markdown>
-              </View>
-              {item.role === "user" && (
-                <View style={styles.userAvatar}>
-                  <Ionicons name="person" size={20} color="white" />
+                {item.role === "bot" && (
+                  <View style={styles.botAvatar}>
+                    <Image
+                      source={{ uri: 'https://github.com/somkene12345/Hex/blob/main/assets/images/icon.png?raw=true' }}
+                      style={styles.botAvatarImage}
+                    />
+                  </View>
+                )}
+                <View style={[
+                  styles.messageContent,
+                  item.role === "user" ? styles.userContent : styles.botContent
+                ]}>
+                  <Markdown 
+                    style={markdownStyles}
+                    rules={{
+                      code_block: renderCodeBlock
+                    }}
+                  >
+                    {item.text}
+                  </Markdown>
                 </View>
-              )}
-            </View>
+                {item.role === "user" && (
+                  <View style={styles.userAvatar}>
+                    <Ionicons name="person" size={20} color="white" />
+                  </View>
+                )}
+              </View>
         )}
         onScroll={handleScroll}
         scrollEventThrottle={16}
       />
 
+      {/* Centered Floating Scroll Down Button */}
       {showScrollButton && (
         <Animated.View style={[styles.scrollButton, { opacity: fadeAnim }]}>
           <TouchableOpacity onPress={scrollToBottom}>
@@ -283,6 +169,7 @@ const Chat = () => {
         </Animated.View>
       )}
 
+      {/* Floating Input Panel */}
       <View style={styles.floatingInputContainer}>
         <View style={styles.inputWrapper}>
           <TextInput
@@ -303,6 +190,7 @@ const Chat = () => {
     </KeyboardAvoidingView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -438,5 +326,64 @@ const styles = StyleSheet.create({
     color: '#666',
   },
 });
+
+const markdownStyles = StyleSheet.create({
+  body: {
+    color: "#333",
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  heading1: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#000",
+    marginVertical: 8,
+  },
+  heading2: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#000",
+    marginVertical: 6,
+  },
+  paragraph: {
+    fontSize: 16,
+    color: "#333",
+    lineHeight: 24,
+    marginVertical: 4,
+  },
+  link: {
+    color: "#007AFF",
+    textDecorationLine: "underline",
+  },
+  strong: {
+    fontWeight: "bold",
+  },
+  em: {
+    fontStyle: "italic",
+  },
+  code_inline: {
+      fontFamily: "monospace",
+      fontSize: 14,
+      lineHeight: 22, // Ensures proper spacing
+      marginVertical: 5, // Adds spacing above/below
+    },
+    image: {
+        width: width * 0.7,  // Adjust width as needed
+        height: 'auto',   // Let height adjust automatically
+        aspectRatio: 1,      // Maintain aspect ratio
+        maxWidth: '100%',    // Don't exceed container width
+        borderRadius: 8,     // Match your border radius
+        marginVertical: 8,
+        backgroundColor: '#f0f0f0',
+        alignSelf: 'center', // Center the image
+        overflow: 'hidden',  // Ensure borders clip the image
+      },    table: {
+      borderWidth: 1,
+      borderColor: "#DDD",
+      padding: 5,
+      marginVertical: 5,
+    },
+  });
+  
 
 export default Chat;
