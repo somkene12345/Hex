@@ -22,45 +22,6 @@ import Markdown from "react-native-markdown-display";
 
 const {width} = Dimensions.get('window');
 
-// SmartImage component for dynamic aspect ratio handling
-const SmartImage = ({ uri }) => {
-  const [dimensions, setDimensions] = useState({
-    width: width * 0.5,
-    height: width * 0.5, // Default square
-  });
-
-  useEffect(() => {
-    Image.getSize(
-      uri,
-      (imgWidth, imgHeight) => {
-        const ratio = imgWidth / imgHeight;
-        setDimensions({
-          width: width * 0.5,
-          height: (width * 0.5) / ratio, // Adjust height proportionally
-        });
-      },
-      (error) => {
-        console.log("Image size error:", error);
-        // Fallback to default dimensions if image fails to load
-        setDimensions({
-          width: width * 0.5,
-          height: width * 0.5,
-        });
-      }
-    );
-  }, [uri]);
-
-  return (
-    <Image
-      source={{ uri }}
-      style={[
-        markdownStyles.image,
-        dimensions,
-      ]}
-      resizeMode="contain"
-    />
-  );
-};
 
 const Chat = () => {
   const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
@@ -136,11 +97,6 @@ const Chat = () => {
     );
   };
 
-  // Image renderer for markdown
-  const renderImage = ({ node }) => (
-    <SmartImage uri={node.attributes.src} />
-  );
-
   const sendMessage = async () => {
     if (!input.trim()) return;
 
@@ -165,38 +121,38 @@ const Chat = () => {
         keyExtractor={(_, index) => index.toString()}
         contentContainerStyle={styles.messagesContainer}
         renderItem={({ item }) => (
-          <View style={[
-            styles.messageWrapper,
-            item.role === "user" ? styles.userWrapper : styles.botWrapper
-          ]}>
-            {item.role === "bot" && (
-              <View style={styles.botAvatar}>
-                <Image
-                  source={{ uri: 'https://github.com/somkene12345/Hex/blob/main/assets/images/icon.png?raw=true' }}
-                  style={styles.botAvatarImage}
-                />
-              </View>
-            )}
+
             <View style={[
-              styles.messageContent,
-              item.role === "user" ? styles.userContent : styles.botContent
-            ]}>
-              <Markdown 
-                style={markdownStyles}
-                rules={{
-                  code_block: renderCodeBlock,
-                  image: renderImage, // Add image renderer
-                }}
-              >
-                {item.text}
-              </Markdown>
-            </View>
-            {item.role === "user" && (
-              <View style={styles.userAvatar}>
-                <Ionicons name="person" size={20} color="white" />
+                styles.messageWrapper,
+                item.role === "user" ? styles.userWrapper : styles.botWrapper
+              ]}>
+                {item.role === "bot" && (
+                  <View style={styles.botAvatar}>
+                    <Image
+                      source={{ uri: 'https://github.com/somkene12345/Hex/blob/main/assets/images/icon.png?raw=true' }}
+                      style={styles.botAvatarImage}
+                    />
+                  </View>
+                )}
+                <View style={[
+                  styles.messageContent,
+                  item.role === "user" ? styles.userContent : styles.botContent
+                ]}>
+                  <Markdown 
+                    style={markdownStyles}
+                    rules={{
+                      code_block: renderCodeBlock
+                    }}
+                  >
+                    {item.text}
+                  </Markdown>
+                </View>
+                {item.role === "user" && (
+                  <View style={styles.userAvatar}>
+                    <Ionicons name="person" size={20} color="white" />
+                  </View>
+                )}
               </View>
-            )}
-          </View>
         )}
         onScroll={handleScroll}
         scrollEventThrottle={16}
@@ -235,6 +191,7 @@ const Chat = () => {
   );
 };
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -257,11 +214,12 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   messageContent: {
-    maxWidth: "90%", // Increased from 80% to allow more space for images
+    maxWidth: "80%",
     paddingVertical: 5,
     paddingHorizontal: 16,
     borderRadius: 18,
     overflow: 'hidden',
+    display: 'flex',
   },
   botContent: {
     backgroundColor: "transparent",
@@ -406,45 +364,35 @@ const markdownStyles = StyleSheet.create({
     fontStyle: "italic",
   },
   code_inline: {
-    fontFamily: "monospace",
-    fontSize: 14,
-    lineHeight: 22,
-    marginVertical: 1,
-  },
-  image: {
-    width: width * 0.5,
-    maxWidth: width * 0.7,
-    height: width * 0.5,
-    minHeight: 100,
-    borderRadius: 8,
-    backgroundColor: '#f0f0f0',
-    resizeMode: 'contain',
-    alignSelf: 'center',
-    marginVertical: 8,
-    ...Platform.select({
-      web: {
-        objectFit: 'contain',
+      fontFamily: "monospace",
+      fontSize: 14,
+      lineHeight: 22, // Ensures proper spacing
+      marginVertical: 1, // Adds spacing above/below
+    },
+    image: {
+        width: width * 0.5,          // 50% of screen width
+        maxWidth: width * 0.7,       // But no more than 70% width
+        height: width * 0.5,         // Fixed height (will respect aspect ratio via resizeMode)
+        borderRadius: 8,
+        backgroundColor: '#f0f0f0',
+        resizeMode: 'contain',       // Ensures whole image fits while maintaining ratio
+        alignSelf: 'center',         // Centers the image
+        marginVertical: 8,
+        ...Platform.select({
+          web: {
+            objectFit: 'contain',    // Web equivalent of resizeMode
+            height: 'auto',         // Let browser calculate height
+            maxHeight: width * 0.7, // Prevent vertical overflow
+          },
+        }),
       },
-    }),
-  },
-  table: {
-    borderWidth: 1,
-    borderColor: "#DDD",
-    padding: 5,
-    marginVertical: 5,
-  },
-  code_blockContainer: {
-    marginVertical: 8,
-  },
-  code_block: {
-    backgroundColor: '#f5f5f5',
-    padding: 12,
-    borderRadius: 4,
-  },
-  code_blockText: {
-    fontFamily: 'monospace',
-    fontSize: 14,
-  },
-});
+          table: {
+      borderWidth: 1,
+      borderColor: "#DDD",
+      padding: 5,
+      marginVertical: 5,
+    },
+  });
+  
 
 export default Chat;
