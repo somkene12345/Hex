@@ -218,6 +218,8 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 16,
     borderRadius: 18,
+    overflow: 'hidden',
+    display: 'flex',
   },
   botContent: {
     backgroundColor: "transparent",
