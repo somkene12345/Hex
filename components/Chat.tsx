@@ -365,16 +365,16 @@ const markdownStyles = StyleSheet.create({
       fontFamily: "monospace",
       fontSize: 14,
       lineHeight: 22, // Ensures proper spacing
-      marginVertical: 5, // Adds spacing above/below
+      marginVertical: 1, // Adds spacing above/below
     },
     image: {
-        width: width * 0.7,  // Set width to 70% of screen width
-        height: width * 0.7,  // Set height to maintain square aspect ratio
-        maxWidth: '100%',     // Ensure it doesn't overflow container
+        width: '100%',                  // Take full container width
+        maxWidth: width * 0.7,          // But no more than 70% of screen width
+        height: width * 0.5,            // Set a reasonable fixed height
         borderRadius: 8,
         backgroundColor: '#f0f0f0',
-        resizeMode: 'contain',
-        alignSelf: 'center',  // Center the image
+        resizeMode: 'contain',          // Ensures image fits within dimensions
+        alignSelf: 'center',            // Centers the image horizontally
         marginVertical: 8,
       },
           table: {
