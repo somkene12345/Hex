@@ -4,16 +4,16 @@ const GROQ_API_KEY = "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";
 const GROQ_MODEL = "llama-3.3-70b-versatile"; // Choose the appropriate model
 const TEMPERATURE = 0.7; // Adjust for creativity
 
-// Initialize the chat model with enhanced markdown instruction
+// Initialize the chat model with markdown instruction
 const chatModel = new ChatGroq({
   apiKey: GROQ_API_KEY,
   model: GROQ_MODEL,
   temperature: TEMPERATURE,
 });
 
-// Enhanced memory storage with image support
+// Simple memory storage
 let conversationHistory: { role: "user" | "assistant"; content: string }[] = [
-  // System message to instruct AI to always use markdown including images
+  // System message to instruct AI to always use markdown
   {
     role: "assistant",
     content: `I will always format my responses using markdown for optimal display. My formatting includes:
@@ -46,69 +46,40 @@ Example of proper image usage:
   }
 ];
 
-// Enhanced function to fetch response from Groq with strict markdown enforcement
-export const fetchGroqResponse = async (message: string): Promise<string> => {
+// Function to fetch response from Groq with markdown enforcement
+export const fetchGroqResponse = async (message: string) => {
   try {
-    // Add user message with gentle reminder about images
+    // Add user message to history with markdown hint
     conversationHistory.push({ 
       role: "user", 
-      content: `${message}\n\n(Please include relevant images in markdown format when appropriate)`
+      content: `${message}` 
     });
 
-    // Invoke with enhanced prompt structure
-    const response = await chatModel.invoke([
-      ...conversationHistory,
-      {
-        role: "system",
-        content: "REMINDER: Always respond using markdown formatting. " +
-                 "Include relevant images when discussing visual concepts " +
-                 "using proper markdown image syntax: ![alt text](url). " +
-                 "Ensure images are properly hosted and accessible."
-      }
-    ]);
-
-    // Process response to ensure image formatting
-    let processedContent = response.content;
-    
-    // Add default image if none provided for certain topics
-    const visualTopics = ['design', 'illustration', 'photo', 'diagram', 'chart'];
-    if (visualTopics.some(topic => message.toLowerCase().includes(topic)) && 
-        !processedContent.includes('![')) {
-      processedContent += `\n\n![Relevant ${visualTopics.find(t => message.includes(t)) || 'visual'}]` +
-                         `(https://source.unsplash.com/random/300x200/?${visualTopics.find(t => message.includes(t)) || 'design'})`;
-    }
+    // Invoke the chat model with memory
+    const response = await chatModel.invoke(conversationHistory);
 
     // Store AI response in memory
     const aiMessage = { 
       role: "assistant", 
-      content: processedContent 
+      content: response.content 
     };
     conversationHistory.push(aiMessage);
 
-    // Return processed message
+    // Return AI's message
     return aiMessage.content;
   } catch (error) {
     console.error("Error fetching response from Groq:", error);
-    return "**Error**: Unable to process request. Please try again later.";
+    return "**Error**: Unable to connect to Groq."; // Even errors in markdown
   }
 };
 
-// Enhanced memory reset with image guidelines
+// Function to reset memory
 export const resetMemory = () => {
   conversationHistory = [
+    // Reset with the markdown instruction
     {
       role: "assistant",
-      content: `I will format responses using markdown including:
-- **Text formatting**
-- \`Code examples\`
-- ![Visual aids](https://example.com/default-image.png) when helpful
-- Organized sections with headers`
+      content: "I will always format my responses using markdown for better readability..."
     }
   ];
-};
-
-// Helper function to validate image URLs in responses
-export const containsValidImageMarkdown = (content: string): boolean => {
-  const imageRegex = /!\[.*?\]\((https?:\/\/[^\s]+?\.(?:png|jpg|jpeg|gif|svg)(?:\?\S*)?)\)/;
-  return imageRegex.test(content);
 };
