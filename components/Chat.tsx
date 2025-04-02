@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import {React,  useState, useRef, useEffect } from "react";
 import {
   View,
   TextInput,
@@ -12,15 +12,67 @@ import {
   Pressable,
   Clipboard,
   Alert,
-  Image, // Add this import
+  Image,
+  Animated,
+  Dimensions,
 } from "react-native";
 import { fetchGroqResponse } from "../services/groqService";
 import { Ionicons } from "@expo/vector-icons";
 import Markdown from "react-native-markdown-display";
 
+const {width} = Dimensions.get('window');
+
+
 const Chat = () => {
   const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
   const [input, setInput] = useState("");
+  const flatListRef = useRef<FlatList>(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Auto-scroll when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0) {
+      scrollToBottom();
+      hideScrollButton();
+    }
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    flatListRef.current?.scrollToEnd({ animated: true });
+  };
+
+  const handleScroll = (event: any) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    const contentHeight = event.nativeEvent.contentSize.height;
+    const layoutHeight = event.nativeEvent.layoutMeasurement.height;
+
+    // Show scroll button if not near bottom
+    if (contentHeight - (offsetY + layoutHeight) > 300) {
+      showScrollButton || showScrollBtn();
+    } else {
+      hideScrollButton();
+    }
+  };
+
+  const showScrollBtn = () => {
+    setShowScrollButton(true);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const hideScrollButton = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowScrollButton(false);
+    });
+  };
 
   const copyToClipboard = (code: string) => {
     Clipboard.setString(code);
@@ -61,64 +113,84 @@ const Chat = () => {
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 85 : 0}
     >
       <FlatList
+        ref={flatListRef}
         data={messages}
         keyExtractor={(_, index) => index.toString()}
         contentContainerStyle={styles.messagesContainer}
         renderItem={({ item }) => (
-          <View style={[
-            styles.messageWrapper,
-            item.role === "user" ? styles.userWrapper : styles.botWrapper
-          ]}>
-            {item.role === "bot" && (
-              <View style={styles.botAvatar}>
-                <Image
-                  source={{ uri: 'https://github.com/somkene12345/Hex/blob/main/assets/images/icon.png?raw=true' }}
-                  style={styles.botAvatarImage}
-                />
-              </View>
-            )}
+
             <View style={[
-              styles.messageContent,
-              item.role === "user" ? styles.userContent : styles.botContent
-            ]}>
-              <Markdown 
-                style={markdownStyles}
-                rules={{
-                  code_block: renderCodeBlock
-                }}
-              >
-                {item.text}
-              </Markdown>
-            </View>
-            {item.role === "user" && (
-              <View style={styles.userAvatar}>
-                <Ionicons name="person" size={20} color="white" />
+                styles.messageWrapper,
+                item.role === "user" ? styles.userWrapper : styles.botWrapper
+              ]}>
+                {item.role === "bot" && (
+                  <View style={styles.botAvatar}>
+                    <Image
+                      source={{ uri: 'https://github.com/somkene12345/Hex/blob/main/assets/images/icon.png?raw=true' }}
+                      style={styles.botAvatarImage}
+                    />
+                  </View>
+                )}
+                <View style={[
+                  styles.messageContent,
+                  item.role === "user" ? styles.userContent : styles.botContent
+                ]}>
+                  <Markdown 
+                    style={markdownStyles}
+                    rules={{
+                      code_block: renderCodeBlock
+                    }}
+                  >
+                    {item.text}
+                  </Markdown>
+                </View>
+                {item.role === "user" && (
+                  <View style={styles.userAvatar}>
+                    <Ionicons name="person" size={20} color="white" />
+                  </View>
+                )}
               </View>
-            )}
-          </View>
         )}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       />
 
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={input}
-          onChangeText={setInput}
-          placeholder="Type a message..."
-          placeholderTextColor="#999"
-          onSubmitEditing={sendMessage}
-          returnKeyType="send"
-          multiline
-        />
-        <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-          <Ionicons name="send" size={20} color="white" />
-        </TouchableOpacity>
+      {/* Centered Floating Scroll Down Button */}
+      {showScrollButton && (
+        <Animated.View style={[styles.scrollButton, { opacity: fadeAnim }]}>
+          <TouchableOpacity onPress={scrollToBottom}>
+            <View style={styles.scrollButtonInner}>
+              <Ionicons name="chevron-down" size={24} color="#007AFF" />
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
+      {/* Floating Input Panel */}
+      <View style={styles.floatingInputContainer}>
+        <View style={styles.inputWrapper}>
+          <TextInput
+            style={styles.input}
+            value={input}
+            onChangeText={setInput}
+            placeholder="Type a message..."
+            placeholderTextColor="#999"
+            onSubmitEditing={sendMessage}
+            returnKeyType="send"
+            multiline
+          />
+          <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+            <Ionicons name="send" size={20} color="white" />
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -127,7 +199,7 @@ const styles = StyleSheet.create({
   },
   messagesContainer: {
     padding: 16,
-    paddingBottom: 80,
+    paddingBottom: 100,
   },
   messageWrapper: {
     flexDirection: "row",
@@ -143,7 +215,7 @@ const styles = StyleSheet.create({
   },
   messageContent: {
     maxWidth: "80%",
-    paddingVertical: 3,
+    paddingVertical: 5,
     paddingHorizontal: 16,
     borderRadius: 18,
   },
@@ -163,7 +235,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 8,
-    overflow: 'hidden', // Ensures the image stays within the circular bounds
+    overflow: 'hidden',
   },
   botAvatarImage: {
     width: '100%',
@@ -178,36 +250,65 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  inputContainer: {
+  floatingInputContainer: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 16,
+    paddingBottom: Platform.OS === 'ios' ? 0 : 8,
+  },
+  inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
     backgroundColor: "#FFF",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#E0E0E0",
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+    borderRadius: 25,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   input: {
     flex: 1,
     backgroundColor: "#F5F5F5",
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 6,
     fontSize: 16,
     maxHeight: 120,
+    marginRight: 8,
   },
   sendButton: {
-    marginLeft: 8,
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: "#007AFF",
     justifyContent: "center",
     alignItems: "center",
+  },
+  scrollButton: {
+    position: 'absolute',
+    left: width / 2 - 20, 
+    bottom: 90,
+    zIndex: 10,
+  },
+  scrollButtonInner: {
+    backgroundColor: 'white',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   copyButton: {
     flexDirection: 'row',
@@ -267,7 +368,7 @@ const markdownStyles = StyleSheet.create({
       marginVertical: 5, // Adds spacing above/below
     },
     link: { color: "#007AFF" },
-    image: { width: 200, height: 100 },
+    image: { width: width * 0.3, height: width * 0.3 },
     table: {
       borderWidth: 1,
       borderColor: "#DDD",
