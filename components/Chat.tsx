@@ -373,7 +373,7 @@ const markdownStyles = StyleSheet.create({
         height: width * 0.5,            // Set a reasonable fixed height
         borderRadius: 8,
         backgroundColor: '#f0f0f0',
-        resizeMode: 'contain',          // Ensures image fits within dimensions
+        resizeMode: 'stretch',
         alignSelf: 'center',            // Centers the image horizontally
         marginVertical: 8,
       },
