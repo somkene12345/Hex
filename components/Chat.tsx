@@ -370,18 +370,16 @@ const markdownStyles = StyleSheet.create({
       marginVertical: 1, // Adds spacing above/below
     },
     image: {
-        width: width * 0.5,          // 50% of screen width
-        maxWidth: width * 0.7,       // But no more than 70% width
+        width: width * 0.9,          // 90% of the screen width
+        height: width * 0.5,         // Maintain aspect ratio
         borderRadius: 8,
         backgroundColor: '#f0f0f0',
-        resizeMode: 'contain',       // Ensures whole image fits while maintaining ratio
-        alignSelf: 'center',         // Centers the image
+        resizeMode: 'contain',       // Prevents cropping
+        alignSelf: 'center',
         marginVertical: 8,
-            objectFit: 'contain',    // Web equivalent of resizeMode
-            height: width * 0.5,         // Let browser calculate height
-            maxHeight: width * 0.7, // Prevent vertical overflow
-          },
-          table: {
+      },
+      
+      table: {
       borderWidth: 1,
       borderColor: "#DDD",
       padding: 5,
