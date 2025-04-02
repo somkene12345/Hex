@@ -366,19 +366,19 @@ const markdownStyles = StyleSheet.create({
   code_inline: {
       fontFamily: "monospace",
       fontSize: 14,
-      lineHeight: 22, // Ensures proper spacing
+      lineHeight: 10, // Ensures proper spacing
       marginVertical: 1, // Adds spacing above/below
     },
     image: {
-        width: width * 0.9,          // 90% of the screen width
-        height: width * 0.5,         // Maintain aspect ratio
+        width: '100%',
+        height: 'auto',            // Correct way for web
+        aspectRatio: 1.5,          // Remove this if targeting web
         borderRadius: 8,
         backgroundColor: '#f0f0f0',
-        resizeMode: 'contain',       // Prevents cropping
+        objectFit: 'contain',      // Web equivalent of 'resizeMode: contain'
         alignSelf: 'center',
         marginVertical: 8,
       },
-      
       table: {
       borderWidth: 1,
       borderColor: "#DDD",
