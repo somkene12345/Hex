@@ -368,15 +368,15 @@ const markdownStyles = StyleSheet.create({
       marginVertical: 1, // Adds spacing above/below
     },
     image: {
-        width: width,                  // Take full container width
+        width: width * 0.5,                  // Take full container width
         maxWidth: width * 0.7,          // But no more than 70% of screen width
         height: width * 0.5,            // Set a reasonable fixed height
         borderRadius: 8,
         backgroundColor: '#f0f0f0',
-        resizeMode: 'stretch',
+        resizeMode: 'contain',
         alignSelf: 'center',            // Centers the image horizontally
         marginVertical: 8,
-        objectFit: 'cover',
+        objectFit: 'cover'
       },
           table: {
       borderWidth: 1,
