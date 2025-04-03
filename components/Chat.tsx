@@ -381,7 +381,7 @@ const markdownStyles = StyleSheet.create({
             web: {
               width: '50vw',           // Viewport-based width for web
               maxWidth: '70vw',
-              height: 'auto',          // Let browser calculate height
+              height: '50vh',          // Let browser calculate height
               objectFit: 'contain',    // Web equivalent of resizeMode
               display: 'block',        // Prevent inline spacing issues
             },
