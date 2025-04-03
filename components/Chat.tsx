@@ -372,7 +372,6 @@ const markdownStyles = StyleSheet.create({
     image: {
         width: '100%',
         height: '100%',            // Correct way for web
-        aspectRatio: 1.5,          // Remove this if targeting web
         borderRadius: 8,
         backgroundColor: '#f0f0f0',
         objectFit: 'contain',      // Web equivalent of 'resizeMode: contain'
