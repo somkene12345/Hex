@@ -370,14 +370,15 @@ const markdownStyles = StyleSheet.create({
       marginVertical: 1, // Adds spacing above/below
     },
     image: {
-        width: '100%',
-        height: '100%',            // Correct way for web
+        width: '100%',               // Full width of the container
+        height: undefined,           // Let height adjust automatically
+        aspectRatio: 1.5,            // Adjust based on your image's aspect ratio
         borderRadius: 8,
         backgroundColor: '#f0f0f0',
-        resizeMode: 'contain',      // Web equivalent of 'resizeMode: contain'
+        resizeMode: 'contain',       // Prevent cropping
         alignSelf: 'center',
         marginVertical: 8,
-      },
+      },       
       table: {
       borderWidth: 1,
       borderColor: "#DDD",
