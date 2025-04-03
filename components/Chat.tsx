@@ -15,10 +15,17 @@ import {
   Image,
   Animated,
   Dimensions,
+  NativeSyntheticEvent,
+ TextInputKeyPressEventData
 } from "react-native";
 import { fetchGroqResponse } from "../services/groqService";
 import { Ionicons } from "@expo/vector-icons";
 import Markdown from "react-native-markdown-display";
+
+// Add this state to track shift key
+const [shiftPressed, setShiftPressed] = useState(false);
+
+
 
 const {width} = Dimensions.get('window');
 
@@ -77,6 +84,18 @@ const Chat = () => {
   const copyToClipboard = (code: string) => {
     Clipboard.setString(code);
     Alert.alert("Copied!", "Code copied to clipboard");
+  };
+  // Add these handlers
+const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+    if (e.nativeEvent.key === 'Enter') {
+      if (!shiftPressed) {
+        e.preventDefault();
+        if (input.trim()) {
+          sendMessage();
+        }
+      }
+      // If shift is pressed, allow default behavior (new line)
+    }
   };
 
   const renderCodeBlock = ({ node, ...props }: any) => {
@@ -171,22 +190,38 @@ const Chat = () => {
 
       {/* Floating Input Panel */}
       <View style={styles.floatingInputContainer}>
-        <View style={styles.inputWrapper}>
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Type a message..."
-            placeholderTextColor="#999"
-            onSubmitEditing={sendMessage}
-            returnKeyType="send"
-            multiline
-          />
-          <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-            <Ionicons name="send" size={20} color="white" />
-          </TouchableOpacity>
-        </View>
-      </View>
+  <View style={styles.inputWrapper}>
+  <TextInput
+  style={styles.input}
+  value={input}
+  onChangeText={setInput}
+  placeholder="Type a message..."
+  placeholderTextColor="#999"
+  onKeyPress={handleKeyPress}
+  onSubmitEditing={() => {
+    if (input.trim() && !shiftPressed) {
+      sendMessage();
+    }
+  }}
+  multiline
+  blurOnSubmit={false}
+  returnKeyType="send"
+  // Add these key handlers
+  onKeyPressOut={() => setShiftPressed(false)}
+/>
+    <TouchableOpacity 
+      onPress={sendMessage} 
+      style={styles.sendButton}
+      disabled={!input.trim()} // Disable when empty
+    >
+      <Ionicons 
+        name="send" 
+        size={20} 
+        color={input.trim() ? "white" : "#ccc"} // Gray when disabled
+      />
+    </TouchableOpacity>
+  </View>
+</View>
     </KeyboardAvoidingView>
   );
 };
@@ -277,12 +312,13 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    minHeight: 40,
+    maxHeight: 120,
     backgroundColor: "#F5F5F5",
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 6,
     fontSize: 16,
-    maxHeight: 120,
     marginRight: 8,
   },
   sendButton: {
