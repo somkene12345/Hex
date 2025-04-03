@@ -23,9 +23,6 @@ import { Ionicons } from "@expo/vector-icons";
 import Markdown from "react-native-markdown-display";
 
 // Add this state to track shift key
-const [shiftPressed, setShiftPressed] = useState(false);
-
-
 
 const {width} = Dimensions.get('window');
 
@@ -36,6 +33,8 @@ const Chat = () => {
   const flatListRef = useRef<FlatList>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [isShiftPressed, setIsShiftPressed] = useState(false);
+
 
   // Auto-scroll when new messages arrive
   useEffect(() => {
@@ -86,16 +85,14 @@ const Chat = () => {
     Alert.alert("Copied!", "Code copied to clipboard");
   };
   // Add these handlers
-const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
-    if (e.nativeEvent.key === 'Enter') {
-      if (!shiftPressed) {
-        e.preventDefault();
-        if (input.trim()) {
-          sendMessage();
-        }
-      }
-      // If shift is pressed, allow default behavior (new line)
+  const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+    if (e.nativeEvent.key === 'Shift') {
+      setIsShiftPressed(true);
     }
+  };
+  
+  const handleKeyRelease = () => {
+    setIsShiftPressed(false);
   };
 
   const renderCodeBlock = ({ node, ...props }: any) => {
@@ -197,17 +194,28 @@ const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => 
   onChangeText={setInput}
   placeholder="Type a message..."
   placeholderTextColor="#999"
-  onKeyPress={handleKeyPress}
   onSubmitEditing={() => {
-    if (input.trim() && !shiftPressed) {
+    if (input.trim() && !isShiftPressed) {
       sendMessage();
     }
   }}
-  multiline
-  blurOnSubmit={false}
+  onKeyPress={(e) => {
+    if (e.nativeEvent.key === 'Enter' && !isShiftPressed) {
+      if (input.trim()) {
+        sendMessage();
+      }
+      // Prevent default behavior
+      if (Platform.OS === 'web') {
+        e.preventDefault();
+      }
+    }
+  }}
   returnKeyType="send"
-  // Add these key handlers
-  onKeyPressOut={() => setShiftPressed(false)}
+  multiline
+  submitBehavior="submit" // RN 0.68+ alternative to blurOnSubmit
+  // Touchable handling for mobile keyboards
+  onTouchStart={handleKeyRelease} // Reset shift state on any touch
+  onTouchEnd={handleKeyRelease}
 />
     <TouchableOpacity 
       onPress={sendMessage} 
