@@ -95,19 +95,34 @@ const Chat = () => {
     setIsShiftPressed(false);
   };
 
-  const renderCodeBlock = ({ node, ...props }: any) => {
+  const renderCodeBlock = ({ node, ...props }: { node: any }) => {
     const code = node.children[0].children[0].value;
+    const language = node.attributes?.language || 'text'; // Get language from markdown or default to 'text'
+  
     return (
-      <View style={markdownStyles.code_blockContainer}>
-        <Pressable
-          onPress={() => copyToClipboard(code)}
-          style={styles.copyButton}
-        >
-          <Ionicons name="copy-outline" size={16} color="#666" />
-          <Text style={styles.copyText}>Copy</Text>
-        </Pressable>
-        <View style={markdownStyles.code_block}>
-          <Text style={markdownStyles.code_blockText}>{code}</Text>
+      <View style={markdownStyles.codeBlockWrapper}>
+        {/* Header Bar */}
+        <View style={markdownStyles.codeHeader}>
+          <Text style={markdownStyles.codeLanguage}>
+            {language.toUpperCase()}
+          </Text>
+          <Pressable
+            onPress={() => {
+              Clipboard.setString(code);
+              Alert.alert('Copied!', 'Code copied to clipboard');
+            }}
+            style={markdownStyles.copyButton}
+          >
+            <Ionicons name="copy-outline" size={14} color="#666" />
+            <Text style={markdownStyles.copyText}>COPY</Text>
+          </Pressable>
+        </View>
+        
+        {/* Code Content */}
+        <View style={markdownStyles.codeBlock}>
+          <Text style={markdownStyles.codeText}>
+            {code}
+          </Text>
         </View>
       </View>
     );
@@ -431,13 +446,52 @@ const markdownStyles = StyleSheet.create({
     paddingVertical: 2,    // Reduced from default
     lineHeight: 18,        // Tighter line height
   },
-  code_block: {
-    fontFamily: "monospace",
-    fontSize: 14,
-    backgroundColor: "#f8f8f8",
+  codeBlockWrapper: {
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginVertical: 12,
+    backgroundColor: '#f8f8f8',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  codeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#f0f0f0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  codeLanguage: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  copyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
     borderRadius: 4,
-    padding: 8,
-    marginVertical: 8,
+    backgroundColor: '#e8e8e8',
+  },
+  copyText: {
+    fontSize: 12,
+    marginLeft: 4,
+    color: '#666',
+    fontWeight: '600',
+  },
+  codeBlock: {
+    padding: 12,
+  },
+  codeText: {
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
   },
   math_inline: {
     fontSize: 14,
