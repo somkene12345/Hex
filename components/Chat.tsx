@@ -370,7 +370,7 @@ const markdownStyles = StyleSheet.create({
       marginVertical: 1, // Adds spacing above/below
     },
     image: {
-        width: 'auto',
+        width: '100%',
         height: 'auto',            // Correct way for web
         aspectRatio: 1.5,          // Remove this if targeting web
         borderRadius: 8,
