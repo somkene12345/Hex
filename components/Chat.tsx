@@ -374,7 +374,7 @@ const markdownStyles = StyleSheet.create({
         height: '100%',            // Correct way for web
         borderRadius: 8,
         backgroundColor: '#f0f0f0',
-        objectFit: 'contain',      // Web equivalent of 'resizeMode: contain'
+        resizeMode: 'contain',      // Web equivalent of 'resizeMode: contain'
         alignSelf: 'center',
         marginVertical: 8,
       },
