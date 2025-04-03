@@ -10,17 +10,18 @@ import {
   Platform,
   Linking,
   Pressable,
-  Clipboard,
   Alert,
   Image,
   Animated,
   Dimensions,
   NativeSyntheticEvent,
- TextInputKeyPressEventData
+ TextInputKeyPressEventData,
+ ScrollView, 
 } from "react-native";
 import { fetchGroqResponse } from "../services/groqService";
 import { Ionicons } from "@expo/vector-icons";
 import Markdown from "react-native-markdown-display";
+import Clipboard from '@react-native-clipboard/clipboard';
 
 // Add this state to track shift key
 
@@ -33,7 +34,8 @@ const Chat = () => {
   const flatListRef = useRef<FlatList>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const [isShiftPressed, setIsShiftPressed] = useState(false);
+  const [shiftPressed, setShiftPressed] = useState(false);
+  
 
 
   // Auto-scroll when new messages arrive
@@ -80,50 +82,61 @@ const Chat = () => {
     });
   };
 
-  const copyToClipboard = (code: string) => {
-    Clipboard.setString(code);
-    Alert.alert("Copied!", "Code copied to clipboard");
-  };
-  // Add these handlers
-  const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
-    if (e.nativeEvent.key === 'Shift') {
-      setIsShiftPressed(true);
+  // Add these keyboard handlers
+  const handleKeyPress = (e: KeyboardEvent) => {
+    if (e.key === 'Shift') {
+      setShiftPressed(true);
     }
   };
   
-  const handleKeyRelease = () => {
-    setIsShiftPressed(false);
+  const handleKeyRelease = (e: KeyboardEvent) => {
+    if (e.key === 'Shift') {
+      setShiftPressed(false);
+    }
   };
+  
+  // Add event listeners (in useEffect)
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      window.addEventListener('keydown', handleKeyPress);
+      window.addEventListener('keyup', handleKeyRelease);
+      return () => {
+        window.removeEventListener('keydown', handleKeyPress);
+        window.removeEventListener('keyup', handleKeyRelease);
+      };
+    }
+  }, []);
 
-  const renderCodeBlock = ({ node, ...props }: { node: any }) => {
-    const code = node.children[0].children[0].value;
-    const language = node.attributes?.language || 'text'; // Get language from markdown or default to 'text'
+  const renderCodeBlock = ({ node }: { node: any }) => {
+    const code = node.children[0]?.children[0]?.value || '';
+    const language = node.attributes?.language || 'text';
+  
+    const handleCopy = () => {
+      Clipboard.setString(code);
+      Alert.alert('Copied!', 'Code copied to clipboard');
+    };
   
     return (
-      <View style={markdownStyles.codeBlockWrapper}>
-        {/* Header Bar */}
-        <View style={markdownStyles.codeHeader}>
-          <Text style={markdownStyles.codeLanguage}>
-            {language.toUpperCase()}
-          </Text>
-          <Pressable
-            onPress={() => {
-              Clipboard.setString(code);
-              Alert.alert('Copied!', 'Code copied to clipboard');
-            }}
-            style={markdownStyles.copyButton}
+      <View style={codeBlockStyles.container}>
+        {/* Header with language and copy button */}
+        <View style={codeBlockStyles.header}>
+          <Text style={codeBlockStyles.language}>{language.toUpperCase()}</Text>
+          <TouchableOpacity
+            style={codeBlockStyles.copyButton}
+            onPress={handleCopy}
+            accessibilityLabel="Copy code"
           >
             <Ionicons name="copy-outline" size={14} color="#666" />
-            <Text style={markdownStyles.copyText}>COPY</Text>
-          </Pressable>
+            <Text style={codeBlockStyles.copyText}>COPY</Text>
+          </TouchableOpacity>
         </View>
         
-        {/* Code Content */}
-        <View style={markdownStyles.codeBlock}>
-          <Text style={markdownStyles.codeText}>
+        {/* Code content */}
+        <ScrollView horizontal>
+          <Text style={codeBlockStyles.codeText}>
             {code}
           </Text>
-        </View>
+        </ScrollView>
       </View>
     );
   };
@@ -210,27 +223,24 @@ const Chat = () => {
   placeholder="Type a message..."
   placeholderTextColor="#999"
   onSubmitEditing={() => {
-    if (input.trim() && !isShiftPressed) {
+    if (input.trim() && !shiftPressed) {
       sendMessage();
     }
   }}
   onKeyPress={(e) => {
-    if (e.nativeEvent.key === 'Enter' && !isShiftPressed) {
+    if (e.nativeEvent.key === 'Enter' && !shiftPressed) {
       if (input.trim()) {
         sendMessage();
-      }
-      // Prevent default behavior
-      if (Platform.OS === 'web') {
-        e.preventDefault();
+        if (Platform.OS === 'web') {
+          e.preventDefault();
+        }
       }
     }
   }}
   returnKeyType="send"
   multiline
-  submitBehavior="submit" // RN 0.68+ alternative to blurOnSubmit
-  // Touchable handling for mobile keyboards
-  onTouchStart={handleKeyRelease} // Reset shift state on any touch
-  onTouchEnd={handleKeyRelease}
+  submitBehavior="submit"
+  enablesReturnKeyAutomatically={true}
 />
     <TouchableOpacity 
       onPress={sendMessage} 
@@ -371,21 +381,6 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  copyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 6,
-    backgroundColor: '#EEE',
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-    alignSelf: 'flex-end',
-    marginBottom: -1,
-  },
-  copyText: {
-    marginLeft: 4,
-    fontSize: 12,
-    color: '#666',
-  },
 });
 
 const markdownStyles = StyleSheet.create({
@@ -446,52 +441,13 @@ const markdownStyles = StyleSheet.create({
     paddingVertical: 2,    // Reduced from default
     lineHeight: 18,        // Tighter line height
   },
-  codeBlockWrapper: {
-    borderRadius: 8,
-    overflow: 'hidden',
-    marginVertical: 12,
-    backgroundColor: '#f8f8f8',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  codeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#f0f0f0',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  codeLanguage: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  copyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 4,
-    backgroundColor: '#e8e8e8',
-  },
-  copyText: {
-    fontSize: 12,
-    marginLeft: 4,
-    color: '#666',
-    fontWeight: '600',
-  },
-  codeBlock: {
-    padding: 12,
-  },
-  codeText: {
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  code_block: {
+    fontFamily: "monospace",
     fontSize: 14,
-    color: '#333',
-    lineHeight: 20,
+    backgroundColor: "#f8f8f8",
+    borderRadius: 4,
+    padding: 8,
+    marginVertical: 8,
   },
   math_inline: {
     fontSize: 14,
@@ -599,5 +555,47 @@ const markdownStyles = StyleSheet.create({
   },
 });
   
+const codeBlockStyles = StyleSheet.create({
+  container: {
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    marginVertical: 12,
+    overflow: 'hidden',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 8,
+    backgroundColor: '#f0f0f0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  language: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  copyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 4,
+    borderRadius: 4,
+    backgroundColor: '#e8e8e8',
+  },
+  copyText: {
+    fontSize: 12,
+    marginLeft: 4,
+    color: '#666',
+    fontWeight: '500',
+  },
+  code: {
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontSize: 14,
+    color: '#333',
+    padding: 12,
+  },
+});
 
 export default Chat;
