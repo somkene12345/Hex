@@ -374,11 +374,14 @@ const styles = StyleSheet.create({
 });
 
 const markdownStyles = StyleSheet.create({
+  // Text Elements
   body: {
     color: "#333",
     fontSize: 16,
     lineHeight: 24,
   },
+  
+  // Headers
   heading1: {
     fontSize: 24,
     fontWeight: "bold",
@@ -391,15 +394,19 @@ const markdownStyles = StyleSheet.create({
     color: "#000",
     marginVertical: 6,
   },
+  heading3: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#000",
+    marginVertical: 4,
+  },
+
+  // Paragraphs and Text Formatting
   paragraph: {
     fontSize: 16,
     color: "#333",
     lineHeight: 24,
     marginVertical: 4,
-  },
-  link: {
-    color: "#007AFF",
-    textDecorationLine: "underline",
   },
   strong: {
     fontWeight: "bold",
@@ -407,40 +414,136 @@ const markdownStyles = StyleSheet.create({
   em: {
     fontStyle: "italic",
   },
+  u: {
+    textDecorationLine: "underline",
+  },
+  s: {
+    textDecorationLine: "line-through",
+  },
+
+  // Code and Technical Elements
   code_inline: {
-      fontFamily: "monospace",
-      fontSize: 14,
-      lineHeight: 10, // Ensures proper spacing
-      marginVertical: 1, // Adds spacing above/below
-    },
-        image: {
-          width: width * 0.5,          // Fixed width (50% of screen)
-          maxWidth: width * 0.7,       // Maximum width (70% of screen)
-          height: width * 0.5,         // Initial height (will be adjusted)
-          borderRadius: 8,
-          backgroundColor: '#f0f0f0',
-          alignSelf: 'center',
-          marginVertical: 8,
-          ...Platform.select({
-            web: {
-              width: '50vw',           // Viewport-based width for web
-              maxWidth: '70vw',
-              height: width * 0.5,          // Let browser calculate height
-              objectFit: 'contain',    // Web equivalent of resizeMode
-              display: 'block',        // Prevent inline spacing issues
-            },
-            default: {
-              resizeMode: 'contain',   // For native platforms
-            }
-          }),
-        },    
-      table: {
-      borderWidth: 1,
-      borderColor: "#DDD",
-      padding: 5,
-      marginVertical: 5,
-    },
-  });
+    fontFamily: "monospace",
+    fontSize: 14,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 3,
+    paddingHorizontal: 4,  // Reduced from default
+    paddingVertical: 2,    // Reduced from default
+    lineHeight: 18,        // Tighter line height
+  },
+  code_block: {
+    fontFamily: "monospace",
+    fontSize: 14,
+    backgroundColor: "#f8f8f8",
+    borderRadius: 4,
+    padding: 8,
+    marginVertical: 8,
+  },
+  math_inline: {
+    fontSize: 14,
+    fontFamily: "monospace",
+    color: "#d63384",
+    paddingHorizontal: 2,  // Minimal padding
+  },
+  math_block: {
+    fontSize: 15,
+    fontFamily: "monospace",
+    backgroundColor: "#f8f8f8",
+    padding: 6,
+    marginVertical: 8,
+    borderRadius: 4,
+  },
+
+  // Links and References
+  link: {
+    color: "#007AFF",
+    textDecorationLine: "underline",
+  },
+  blocklink: {
+    borderLeftWidth: 3,
+    borderLeftColor: "#007AFF",
+    paddingLeft: 8,
+  },
+
+  // Images and Media
+  image: {
+    width: width * 0.5,
+    maxWidth: width * 0.7,
+    height: 'auto',
+    aspectRatio: 1,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+    alignSelf: 'center',
+    marginVertical: 8,
+    ...Platform.select({
+      web: {
+        width: '50%',
+        maxWidth: '70%',
+        height: 'auto',
+        objectFit: 'contain',
+        display: 'block',
+      },
+      default: {
+        resizeMode: 'contain',
+      }
+    }),
+  },
+
+  // Tables
+  table: {
+    borderWidth: 1,
+    borderColor: "#DDD",
+    borderRadius: 4,
+    marginVertical: 8,
+  },
+  th: {
+    backgroundColor: "#f5f5f5",
+    fontWeight: "bold",
+    padding: 8,
+    textAlign: "center",
+  },
+  td: {
+    padding: 6,
+    borderTopWidth: 1,
+    borderColor: "#DDD",
+  },
+  tr: {
+    flexDirection: "row",
+  },
+
+  // Lists
+  bullet_list: {
+    marginVertical: 4,
+  },
+  ordered_list: {
+    marginVertical: 4,
+  },
+  list_item: {
+    flexDirection: "row",
+    marginVertical: 2,
+  },
+  bullet_list_icon: {
+    marginRight: 8,
+  },
+  ordered_list_icon: {
+    marginRight: 8,
+  },
+
+  // Quotes and Blocks
+  blockquote: {
+    backgroundColor: "#f9f9f9",
+    borderLeftWidth: 4,
+    borderLeftColor: "#DDD",
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    marginVertical: 8,
+  },
+  hr: {
+    height: 1,
+    backgroundColor: "#DDD",
+    marginVertical: 16,
+  },
+});
   
 
 export default Chat;
