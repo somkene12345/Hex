@@ -369,16 +369,27 @@ const markdownStyles = StyleSheet.create({
       lineHeight: 10, // Ensures proper spacing
       marginVertical: 1, // Adds spacing above/below
     },
-    image: {
-        width: '100%',
-        height: width * 0.325,            // Correct way for web
-        aspectRatio: 1,          // Remove this if targeting web
-        borderRadius: 8,
-        backgroundColor: '#f0f0f0',
-        alignSelf: 'center',
-        marginVertical: 8,
-        overflow: 'hidden',
-      },         
+        image: {
+          width: width * 0.5,          // Fixed width (50% of screen)
+          maxWidth: width * 0.7,       // Maximum width (70% of screen)
+          height: width * 0.5,         // Initial height (will be adjusted)
+          borderRadius: 8,
+          backgroundColor: '#f0f0f0',
+          alignSelf: 'center',
+          marginVertical: 8,
+          ...Platform.select({
+            web: {
+              width: '50vw',           // Viewport-based width for web
+              maxWidth: '70vw',
+              height: 'auto',          // Let browser calculate height
+              objectFit: 'contain',    // Web equivalent of resizeMode
+              display: 'block',        // Prevent inline spacing issues
+            },
+            default: {
+              resizeMode: 'contain',   // For native platforms
+            }
+          }),
+        },    
       table: {
       borderWidth: 1,
       borderColor: "#DDD",
