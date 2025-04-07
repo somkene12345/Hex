@@ -15,18 +15,15 @@ import {
   Animated,
   Dimensions,
   NativeSyntheticEvent,
- TextInputKeyPressEventData,
- ScrollView, 
+  TextInputKeyPressEventData,
+  ScrollView, 
 } from "react-native";
 import { fetchGroqResponse } from "../services/groqService";
 import { Ionicons } from "@expo/vector-icons";
 import Markdown from "react-native-markdown-display";
 import Clipboard from '@react-native-clipboard/clipboard';
 
-// Add this state to track shift key
-
 const {width} = Dimensions.get('window');
-
 
 const Chat = () => {
   const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
@@ -35,8 +32,7 @@ const Chat = () => {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [shiftPressed, setShiftPressed] = useState(false);
-  
-
+  const inputRef = useRef<TextInput>(null);
 
   // Auto-scroll when new messages arrive
   useEffect(() => {
@@ -57,7 +53,7 @@ const Chat = () => {
 
     // Show scroll button if not near bottom
     if (contentHeight - (offsetY + layoutHeight) > 300) {
-      showScrollButton || showScrollBtn();
+      showScrollBtn();
     } else {
       hideScrollButton();
     }
@@ -82,30 +78,18 @@ const Chat = () => {
     });
   };
 
-  // Add these keyboard handlers
-  const handleKeyPress = (e: KeyboardEvent) => {
-    if (e.key === 'Shift') {
+  // Keyboard handlers for shift key
+  const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+    if (e.nativeEvent.key === 'Shift') {
       setShiftPressed(true);
     }
   };
   
-  const handleKeyRelease = (e: KeyboardEvent) => {
-    if (e.key === 'Shift') {
+  const handleKeyRelease = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+    if (e.nativeEvent.key === 'Shift') {
       setShiftPressed(false);
     }
   };
-  
-  // Add event listeners (in useEffect)
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      window.addEventListener('keydown', handleKeyPress);
-      window.addEventListener('keyup', handleKeyRelease);
-      return () => {
-        window.removeEventListener('keydown', handleKeyPress);
-        window.removeEventListener('keyup', handleKeyRelease);
-      };
-    }
-  }, []);
 
   const renderCodeBlock = ({ node }: { node: any }) => {
     const code = node.children[0]?.children[0]?.value || '';
@@ -118,7 +102,6 @@ const Chat = () => {
   
     return (
       <View style={codeBlockStyles.container}>
-        {/* Header with language and copy button */}
         <View style={codeBlockStyles.header}>
           <Text style={codeBlockStyles.language}>{language.toUpperCase()}</Text>
           <TouchableOpacity
@@ -131,12 +114,30 @@ const Chat = () => {
           </TouchableOpacity>
         </View>
         
-        {/* Code content */}
         <ScrollView horizontal>
-          <Text style={codeBlockStyles.codeText}>
+          <Text style={codeBlockStyles.code}>
             {code}
           </Text>
         </ScrollView>
+      </View>
+    );
+  };
+
+  const renderImage = ({ node, ...props }: { node: any }) => {
+    const source = node.attributes.src;
+    const alt = node.attributes.alt || 'Image';
+    
+    return (
+      <View style={markdownStyles.imageContainer}>
+        <Image
+          source={{ uri: source }}
+          style={markdownStyles.image}
+          resizeMode="contain"
+          accessibilityLabel={alt}
+        />
+        {alt && alt !== 'Image' && (
+          <Text style={markdownStyles.imageCaption}>{alt}</Text>
+        )}
       </View>
     );
   };
@@ -148,9 +149,24 @@ const Chat = () => {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
 
-    const botResponse = await fetchGroqResponse(input);
-    const botMessage = { role: "bot", text: botResponse };
-    setMessages((prev) => [...prev, botMessage]);
+    try {
+      const botResponse = await fetchGroqResponse(input);
+      const botMessage = { role: "bot", text: botResponse };
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      const errorMessage = { role: "bot", text: "Sorry, I encountered an error. Please try again." };
+      setMessages((prev) => [...prev, errorMessage]);
+    }
+  };
+
+  const handleSubmit = () => {
+    if (shiftPressed) {
+      // Insert new line when shift+enter is pressed
+      setInput(prev => prev + '\n');
+    } else {
+      // Submit message when enter alone is pressed
+      sendMessage();
+    }
   };
 
   return (
@@ -165,44 +181,43 @@ const Chat = () => {
         keyExtractor={(_, index) => index.toString()}
         contentContainerStyle={styles.messagesContainer}
         renderItem={({ item }) => (
-
-            <View style={[
-                styles.messageWrapper,
-                item.role === "user" ? styles.userWrapper : styles.botWrapper
-              ]}>
-                {item.role === "bot" && (
-                  <View style={styles.botAvatar}>
-                    <Image
-                      source={{ uri: 'https://github.com/somkene12345/Hex/blob/main/assets/images/icon.png?raw=true' }}
-                      style={styles.botAvatarImage}
-                    />
-                  </View>
-                )}
-                <View style={[
-                  styles.messageContent,
-                  item.role === "user" ? styles.userContent : styles.botContent
-                ]}>
-                  <Markdown 
-                    style={markdownStyles}
-                    rules={{
-                      code_block: renderCodeBlock
-                    }}
-                  >
-                    {item.text}
-                  </Markdown>
-                </View>
-                {item.role === "user" && (
-                  <View style={styles.userAvatar}>
-                    <Ionicons name="person" size={20} color="white" />
-                  </View>
-                )}
+          <View style={[
+            styles.messageWrapper,
+            item.role === "user" ? styles.userWrapper : styles.botWrapper
+          ]}>
+            {item.role === "bot" && (
+              <View style={styles.botAvatar}>
+                <Image
+                  source={{ uri: 'https://github.com/somkene12345/Hex/blob/main/assets/images/icon.png?raw=true' }}
+                  style={styles.botAvatarImage}
+                />
               </View>
+            )}
+            <View style={[
+              styles.messageContent,
+              item.role === "user" ? styles.userContent : styles.botContent
+            ]}>
+              <Markdown 
+                style={markdownStyles}
+                rules={{
+                  code_block: renderCodeBlock,
+                  image: renderImage,
+                }}
+              >
+                {item.text}
+              </Markdown>
+            </View>
+            {item.role === "user" && (
+              <View style={styles.userAvatar}>
+                <Ionicons name="person" size={20} color="white" />
+              </View>
+            )}
+          </View>
         )}
         onScroll={handleScroll}
         scrollEventThrottle={16}
       />
 
-      {/* Centered Floating Scroll Down Button */}
       {showScrollButton && (
         <Animated.View style={[styles.scrollButton, { opacity: fadeAnim }]}>
           <TouchableOpacity onPress={scrollToBottom}>
@@ -213,52 +228,47 @@ const Chat = () => {
         </Animated.View>
       )}
 
-      {/* Floating Input Panel */}
       <View style={styles.floatingInputContainer}>
-  <View style={styles.inputWrapper}>
-  <TextInput
-  style={styles.input}
-  value={input}
-  onChangeText={setInput}
-  placeholder="Type a message..."
-  placeholderTextColor="#999"
-  onSubmitEditing={() => {
-    if (input.trim() && !shiftPressed) {
-      sendMessage();
-    }
-  }}
-  onKeyPress={(e) => {
-    if (e.nativeEvent.key === 'Enter' && !shiftPressed) {
-      if (input.trim()) {
-        sendMessage();
-        if (Platform.OS === 'web') {
-          e.preventDefault();
-        }
-      }
-    }
-  }}
-  returnKeyType="send"
-  multiline
-  submitBehavior="submit"
-  enablesReturnKeyAutomatically={true}
-/>
-    <TouchableOpacity 
-      onPress={sendMessage} 
-      style={styles.sendButton}
-      disabled={!input.trim()} // Disable when empty
-    >
-      <Ionicons 
-        name="send" 
-        size={20} 
-        color={input.trim() ? "white" : "#ccc"} // Gray when disabled
-      />
-    </TouchableOpacity>
-  </View>
-</View>
+        <View style={styles.inputWrapper}>
+          <TextInput
+            ref={inputRef}
+            style={styles.input}
+            value={input}
+            onChangeText={setInput}
+            placeholder="Type a message..."
+            placeholderTextColor="#999"
+            onSubmitEditing={handleSubmit}
+            onKeyPress={(e) => {
+              if (e.nativeEvent.key === 'Shift') {
+                setShiftPressed(true);
+              }
+            }}
+            onKeyPressOut={(e) => {
+              if (e.nativeEvent.key === 'Shift') {
+                setShiftPressed(false);
+              }
+            }}
+            returnKeyType={shiftPressed ? 'default' : 'send'}
+            multiline
+            blurOnSubmit={false}
+            enablesReturnKeyAutomatically={true}
+          />
+          <TouchableOpacity 
+            onPress={sendMessage} 
+            style={styles.sendButton}
+            disabled={!input.trim()}
+          >
+            <Ionicons 
+              name="send" 
+              size={20} 
+              color={input.trim() ? "white" : "#ccc"}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
     </KeyboardAvoidingView>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
@@ -437,9 +447,9 @@ const markdownStyles = StyleSheet.create({
     fontSize: 14,
     backgroundColor: "#f5f5f5",
     borderRadius: 3,
-    paddingHorizontal: 4,  // Reduced from default
-    paddingVertical: 2,    // Reduced from default
-    lineHeight: 18,        // Tighter line height
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    lineHeight: 18,
   },
   code_block: {
     fontFamily: "monospace",
@@ -453,7 +463,7 @@ const markdownStyles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "monospace",
     color: "#d63384",
-    paddingHorizontal: 2,  // Minimal padding
+    paddingHorizontal: 2,
   },
   math_block: {
     fontSize: 15,
@@ -476,27 +486,23 @@ const markdownStyles = StyleSheet.create({
   },
 
   // Images and Media
+  imageContainer: {
+    marginVertical: 8,
+    alignItems: 'center',
+  },
   image: {
-    width: width * 0.5,
-    maxWidth: width * 0.7,
-    height: 'auto',
+    width: '100%',
+    maxWidth: width * 0.8,
+    height: undefined,
     aspectRatio: 1,
     borderRadius: 8,
     backgroundColor: '#f0f0f0',
-    alignSelf: 'center',
-    marginVertical: 8,
-    ...Platform.select({
-      web: {
-        width: '50%',
-        maxWidth: '70%',
-        height: 'auto',
-        objectFit: 'contain',
-        display: 'block',
-      },
-      default: {
-        resizeMode: 'contain',
-      }
-    }),
+  },
+  imageCaption: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+    textAlign: 'center',
   },
 
   // Tables
@@ -561,6 +567,8 @@ const codeBlockStyles = StyleSheet.create({
     borderRadius: 8,
     marginVertical: 12,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   header: {
     flexDirection: 'row',
