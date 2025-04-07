@@ -18,7 +18,8 @@ import { fetchGroqResponse } from "../services/groqService";
 import { Ionicons } from "@expo/vector-icons";
 import Markdown, { ASTNode } from "react-native-markdown-display";
 import Clipboard from '@react-native-clipboard/clipboard';
-import { CodeBlock, dracula } from "react-code-blocks";
+import SyntaxHighlighter from 'react-native-syntax-highlighter';
+import { atomOneDark } from 'react-syntax-highlighter/styles/hljs';
 
 const { width } = Dimensions.get('window');
 
@@ -93,21 +94,16 @@ const Chat = () => {
             <Ionicons name="copy-outline" size={16} color="#f8f8f2" />
           </TouchableOpacity>
         </View>
-        <View style={codeBlockStyles.codeContainer}>
-          <CodeBlock
-            text={code}
-            language={language}
-            showLineNumbers={false}
-            theme={dracula}
-            wrapLongLines
-            codeBlockStyle={{
-              fontSize: 14,
-              padding: 16,
-              margin: 0,
-              backgroundColor: "#282a36",
-            }}
-          />
-        </View>
+        <SyntaxHighlighter
+          language={language}
+          style={atomOneDark}
+          highlighter="hljs"
+          fontSize={13}
+          paddingHorizontal={16}
+          paddingVertical={12}
+        >
+          {code}
+        </SyntaxHighlighter>
       </View>
     );
   };
@@ -148,17 +144,16 @@ const Chat = () => {
     }
   };
 
-  const handleSubmit = () => {
-    if (shiftPressed) {
-      setInput(prev => prev + '\n');
-    } else {
-      sendMessage();
-    }
-  };
-
   const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
     if (e.nativeEvent.key === 'Shift') {
       setShiftPressed(true);
+      return;
+    }
+
+    if (e.nativeEvent.key === 'Enter' && !shiftPressed) {
+      e.preventDefault();
+      sendMessage();
+      return;
     }
   };
 
@@ -234,13 +229,11 @@ const Chat = () => {
             onChangeText={setInput}
             placeholder="Type a message..."
             placeholderTextColor="#999"
-            onSubmitEditing={handleSubmit}
             onKeyPress={handleKeyPress}
             onKeyRelease={handleKeyRelease}
-            returnKeyType={shiftPressed ? 'default' : 'send'}
+            returnKeyType="default"
             multiline
             blurOnSubmit={false}
-            enablesReturnKeyAutomatically={true}
           />
           <TouchableOpacity 
             onPress={sendMessage} 
@@ -433,37 +426,6 @@ const markdownStyles = StyleSheet.create({
     paddingVertical: 2,
     lineHeight: 18,
   },
-  code_block: {
-    fontFamily: "monospace",
-    fontSize: 14,
-    backgroundColor: "#f8f8f8",
-    borderRadius: 4,
-    padding: 8,
-    marginVertical: 8,
-  },
-  math_inline: {
-    fontSize: 14,
-    fontFamily: "monospace",
-    color: "#d63384",
-    paddingHorizontal: 2,
-  },
-  math_block: {
-    fontSize: 15,
-    fontFamily: "monospace",
-    backgroundColor: "#f8f8f8",
-    padding: 6,
-    marginVertical: 8,
-    borderRadius: 4,
-  },
-  link: {
-    color: "#007AFF",
-    textDecorationLine: "underline",
-  },
-  blocklink: {
-    borderLeftWidth: 3,
-    borderLeftColor: "#007AFF",
-    paddingLeft: 8,
-  },
   imageContainer: {
     marginVertical: 8,
     alignItems: 'center',
@@ -481,55 +443,6 @@ const markdownStyles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
     textAlign: 'center',
-  },
-  table: {
-    borderWidth: 1,
-    borderColor: "#DDD",
-    borderRadius: 4,
-    marginVertical: 8,
-  },
-  th: {
-    backgroundColor: "#f5f5f5",
-    fontWeight: "bold",
-    padding: 8,
-    textAlign: "center",
-  },
-  td: {
-    padding: 6,
-    borderTopWidth: 1,
-    borderColor: "#DDD",
-  },
-  tr: {
-    flexDirection: "row",
-  },
-  bullet_list: {
-    marginVertical: 4,
-  },
-  ordered_list: {
-    marginVertical: 4,
-  },
-  list_item: {
-    flexDirection: "row",
-    marginVertical: 2,
-  },
-  bullet_list_icon: {
-    marginRight: 8,
-  },
-  ordered_list_icon: {
-    marginRight: 8,
-  },
-  blockquote: {
-    backgroundColor: "#f9f9f9",
-    borderLeftWidth: 4,
-    borderLeftColor: "#DDD",
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    marginVertical: 8,
-  },
-  hr: {
-    height: 1,
-    backgroundColor: "#DDD",
-    marginVertical: 16,
   },
 });
 
@@ -558,9 +471,6 @@ const codeBlockStyles = StyleSheet.create({
   },
   copyButton: {
     padding: 4,
-  },
-  codeContainer: {
-    backgroundColor: '#282a36',
   },
 });
 
