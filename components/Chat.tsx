@@ -22,6 +22,7 @@ import { fetchGroqResponse } from "../services/groqService";
 import { Ionicons } from "@expo/vector-icons";
 import Markdown from "react-native-markdown-display";
 import Clipboard from '@react-native-clipboard/clipboard';
+import { CodeBlock, CopyBlock, dracula } from "react-code-blocks";
 
 const {width} = Dimensions.get('window');
 
@@ -94,31 +95,36 @@ const Chat = () => {
   const renderCodeBlock = ({ node }: { node: any }) => {
     const code = node.children[0]?.children[0]?.value || '';
     const language = node.attributes?.language || 'text';
-  
-    const handleCopy = () => {
-      Clipboard.setString(code);
-      Alert.alert('Copied!', 'Code copied to clipboard');
-    };
-  
+    
     return (
       <View style={codeBlockStyles.container}>
-        <View style={codeBlockStyles.header}>
-          <Text style={codeBlockStyles.language}>{language.toUpperCase()}</Text>
-          <TouchableOpacity
-            style={codeBlockStyles.copyButton}
-            onPress={handleCopy}
-            accessibilityLabel="Copy code"
-          >
-            <Ionicons name="copy-outline" size={14} color="#666" />
-            <Text style={codeBlockStyles.copyText}>COPY</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <ScrollView horizontal>
-          <Text style={codeBlockStyles.code}>
-            {code}
-          </Text>
-        </ScrollView>
+ <CopyBlock
+  text={code}
+  language={language}
+  showLineNumbers={false}
+  theme={dracula}
+  codeBlock
+  wrapLines
+  customStyle={{
+    fontSize: "14px",  // Changed from 14 to "14px"
+    padding: "16px",   // Changed from 16 to "16px"
+    borderRadius: "0px", // Changed from 0 to "0px"
+    margin: "0px",     // Changed from 0 to "0px"
+    height: "auto",
+    minHeight: "40px", // Changed from 40 to "40px"
+    backgroundColor: "#282a36",
+    overflow: "hidden"
+  }}
+  iconContainerStyle={{
+    position: "absolute",
+    right: "8px",      // Changed from 8 to "8px"
+    top: "8px",        // Changed from 8 to "8px"
+    zIndex: 1,         // Can stay as number
+    padding: "4px",    // Changed from 4 to "4px"
+    backgroundColor: "rgba(0,0,0,0.2)",
+    borderRadius: "4px" // Changed from 4 to "4px"
+  }}
+/>
       </View>
     );
   };
@@ -493,7 +499,7 @@ const markdownStyles = StyleSheet.create({
   image: {
     width: '100%',
     maxWidth: width * 0.8,
-    height: undefined,
+    height: "auto",
     aspectRatio: 1,
     borderRadius: 8,
     backgroundColor: '#f0f0f0',
@@ -563,46 +569,11 @@ const markdownStyles = StyleSheet.create({
   
 const codeBlockStyles = StyleSheet.create({
   container: {
-    backgroundColor: '#f8f8f8',
     borderRadius: 8,
     marginVertical: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 8,
-    backgroundColor: '#f0f0f0',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  language: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  copyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 4,
-    borderRadius: 4,
-    backgroundColor: '#e8e8e8',
-  },
-  copyText: {
-    fontSize: 12,
-    marginLeft: 4,
-    color: '#666',
-    fontWeight: '500',
-  },
-  code: {
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    fontSize: 14,
-    color: '#333',
-    padding: 12,
+    borderColor: '#444',
   },
 });
 
