@@ -1,4 +1,4 @@
-import {React,  useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   TextInput,
@@ -8,26 +8,27 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Linking,
-  Pressable,
-  Alert,
   Image,
   Animated,
   Dimensions,
   NativeSyntheticEvent,
   TextInputKeyPressEventData,
-  ScrollView, 
 } from "react-native";
 import { fetchGroqResponse } from "../services/groqService";
 import { Ionicons } from "@expo/vector-icons";
-import Markdown from "react-native-markdown-display";
+import Markdown, { ASTNode } from "react-native-markdown-display";
 import Clipboard from '@react-native-clipboard/clipboard';
-import { CodeBlock, CopyBlock, dracula } from "react-code-blocks";
+import { CodeBlock, dracula } from "react-code-blocks";
 
-const {width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
+
+type Message = {
+  role: string;
+  text: string;
+};
 
 const Chat = () => {
-  const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const flatListRef = useRef<FlatList>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -35,7 +36,6 @@ const Chat = () => {
   const [shiftPressed, setShiftPressed] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
-  // Auto-scroll when new messages arrive
   useEffect(() => {
     if (messages.length > 0) {
       scrollToBottom();
@@ -52,7 +52,6 @@ const Chat = () => {
     const contentHeight = event.nativeEvent.contentSize.height;
     const layoutHeight = event.nativeEvent.layoutMeasurement.height;
 
-    // Show scroll button if not near bottom
     if (contentHeight - (offsetY + layoutHeight) > 300) {
       showScrollBtn();
     } else {
@@ -79,57 +78,41 @@ const Chat = () => {
     });
   };
 
-  // Keyboard handlers for shift key
-  const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
-    if (e.nativeEvent.key === 'Shift') {
-      setShiftPressed(true);
-    }
-  };
-  
-  const handleKeyRelease = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
-    if (e.nativeEvent.key === 'Shift') {
-      setShiftPressed(false);
-    }
-  };
-
-  const renderCodeBlock = ({ node }: { node: any }) => {
+  const renderCodeBlock = (node: ASTNode) => {
     const code = node.children[0]?.children[0]?.value || '';
     const language = node.attributes?.language || 'text';
     
     return (
       <View style={codeBlockStyles.container}>
- <CopyBlock
-  text={code}
-  language={language}
-  showLineNumbers={false}
-  theme={dracula}
-  codeBlock
-  wrapLines
-  customStyle={{
-    fontSize: "14px",  // Changed from 14 to "14px"
-    padding: "16px",   // Changed from 16 to "16px"
-    borderRadius: "0px", // Changed from 0 to "0px"
-    margin: "0px",     // Changed from 0 to "0px"
-    height: "auto",
-    minHeight: "40px", // Changed from 40 to "40px"
-    backgroundColor: "#282a36",
-    overflow: "hidden"
-  }}
-  iconContainerStyle={{
-    position: "absolute",
-    right: "8px",      // Changed from 8 to "8px"
-    top: "8px",        // Changed from 8 to "8px"
-    zIndex: 1,         // Can stay as number
-    padding: "4px",    // Changed from 4 to "4px"
-    backgroundColor: "rgba(0,0,0,0.2)",
-    borderRadius: "4px" // Changed from 4 to "4px"
-  }}
-/>
+        <View style={codeBlockStyles.header}>
+          <Text style={codeBlockStyles.language}>{language}</Text>
+          <TouchableOpacity 
+            onPress={() => Clipboard.setString(code)}
+            style={codeBlockStyles.copyButton}
+          >
+            <Ionicons name="copy-outline" size={16} color="#f8f8f2" />
+          </TouchableOpacity>
+        </View>
+        <View style={codeBlockStyles.codeContainer}>
+          <CodeBlock
+            text={code}
+            language={language}
+            showLineNumbers={false}
+            theme={dracula}
+            wrapLongLines
+            codeBlockStyle={{
+              fontSize: 14,
+              padding: 16,
+              margin: 0,
+              backgroundColor: "#282a36",
+            }}
+          />
+        </View>
       </View>
     );
   };
 
-  const renderImage = ({ node, ...props }: { node: any }) => {
+  const renderImage = (node: ASTNode) => {
     const source = node.attributes.src;
     const alt = node.attributes.alt || 'Image';
     
@@ -151,28 +134,36 @@ const Chat = () => {
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMessage = { role: "user", text: input };
+    const userMessage: Message = { role: "user", text: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
 
     try {
       const botResponse = await fetchGroqResponse(input);
-      const botMessage = { role: "bot", text: botResponse };
+      const botMessage: Message = { role: "bot", text: botResponse };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
-      const errorMessage = { role: "bot", text: "Sorry, I encountered an error. Please try again." };
+      const errorMessage: Message = { role: "bot", text: "Sorry, I encountered an error. Please try again." };
       setMessages((prev) => [...prev, errorMessage]);
     }
   };
 
   const handleSubmit = () => {
     if (shiftPressed) {
-      // Insert new line when shift+enter is pressed
       setInput(prev => prev + '\n');
     } else {
-      // Submit message when enter alone is pressed
       sendMessage();
     }
+  };
+
+  const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+    if (e.nativeEvent.key === 'Shift') {
+      setShiftPressed(true);
+    }
+  };
+
+  const handleKeyRelease = () => {
+    setShiftPressed(false);
   };
 
   return (
@@ -244,16 +235,8 @@ const Chat = () => {
             placeholder="Type a message..."
             placeholderTextColor="#999"
             onSubmitEditing={handleSubmit}
-            onKeyPress={(e) => {
-              if (e.nativeEvent.key === 'Shift') {
-                setShiftPressed(true);
-              }
-            }}
-            onKeyPressOut={(e) => {
-              if (e.nativeEvent.key === 'Shift') {
-                setShiftPressed(false);
-              }
-            }}
+            onKeyPress={handleKeyPress}
+            onKeyRelease={handleKeyRelease}
             returnKeyType={shiftPressed ? 'default' : 'send'}
             multiline
             blurOnSubmit={false}
@@ -400,14 +383,11 @@ const styles = StyleSheet.create({
 });
 
 const markdownStyles = StyleSheet.create({
-  // Text Elements
   body: {
     color: "#333",
     fontSize: 16,
     lineHeight: 24,
   },
-  
-  // Headers
   heading1: {
     fontSize: 24,
     fontWeight: "bold",
@@ -426,8 +406,6 @@ const markdownStyles = StyleSheet.create({
     color: "#000",
     marginVertical: 4,
   },
-
-  // Paragraphs and Text Formatting
   paragraph: {
     fontSize: 16,
     color: "#333",
@@ -446,8 +424,6 @@ const markdownStyles = StyleSheet.create({
   s: {
     textDecorationLine: "line-through",
   },
-
-  // Code and Technical Elements
   code_inline: {
     fontFamily: "monospace",
     fontSize: 14,
@@ -479,8 +455,6 @@ const markdownStyles = StyleSheet.create({
     marginVertical: 8,
     borderRadius: 4,
   },
-
-  // Links and References
   link: {
     color: "#007AFF",
     textDecorationLine: "underline",
@@ -490,8 +464,6 @@ const markdownStyles = StyleSheet.create({
     borderLeftColor: "#007AFF",
     paddingLeft: 8,
   },
-
-  // Images and Media
   imageContainer: {
     marginVertical: 8,
     alignItems: 'center',
@@ -499,7 +471,7 @@ const markdownStyles = StyleSheet.create({
   image: {
     width: '100%',
     maxWidth: width * 0.8,
-    height: "auto",
+    height: 'auto',
     aspectRatio: 1,
     borderRadius: 8,
     backgroundColor: '#f0f0f0',
@@ -510,8 +482,6 @@ const markdownStyles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
-
-  // Tables
   table: {
     borderWidth: 1,
     borderColor: "#DDD",
@@ -532,8 +502,6 @@ const markdownStyles = StyleSheet.create({
   tr: {
     flexDirection: "row",
   },
-
-  // Lists
   bullet_list: {
     marginVertical: 4,
   },
@@ -550,8 +518,6 @@ const markdownStyles = StyleSheet.create({
   ordered_list_icon: {
     marginRight: 8,
   },
-
-  // Quotes and Blocks
   blockquote: {
     backgroundColor: "#f9f9f9",
     borderLeftWidth: 4,
@@ -566,7 +532,7 @@ const markdownStyles = StyleSheet.create({
     marginVertical: 16,
   },
 });
-  
+
 const codeBlockStyles = StyleSheet.create({
   container: {
     borderRadius: 8,
@@ -574,6 +540,27 @@ const codeBlockStyles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#444',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#343746',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#444',
+  },
+  language: {
+    color: '#f8f8f2',
+    fontSize: 14,
+    fontFamily: 'monospace',
+  },
+  copyButton: {
+    padding: 4,
+  },
+  codeContainer: {
+    backgroundColor: '#282a36',
   },
 });
 
