@@ -16,10 +16,15 @@ import {
 } from "react-native";
 import { fetchGroqResponse } from "../services/groqService";
 import { Ionicons } from "@expo/vector-icons";
-import Markdown, { ASTNode } from "react-native-markdown-display";
+import Markdown, {  ASTNode } from 'react-native-markdown-display';
+import MarkdownRules from "react-native-markdown-display"
 import Clipboard from '@react-native-clipboard/clipboard';
 import SyntaxHighlighter from 'react-native-syntax-highlighter';
 import { atomOneDark } from 'react-syntax-highlighter/styles/hljs';
+import { Video, ResizeMode } from 'expo-av';
+
+
+
 
 const { width } = Dimensions.get('window');
 
@@ -127,6 +132,35 @@ const Chat = () => {
     );
   };
 
+  const videoRule: MarkdownRules = {
+    match: (source: string) =>
+      /^@\[video\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/.exec(source),
+  
+    parse: (match: RegExpExecArray) => ({
+      href: match[1],
+      title: match[2] || 'Video',
+    }),
+  
+    react: (node: ASTNode, output: any, state: any) => {
+      const source = node.attributes?.href;
+      const caption = node.attributes?.title;
+  
+      return (
+        <View key={state.key} style={markdownStyles.imageContainer}>
+          <Video
+            source={{ uri: source }}
+            resizeMode={ResizeMode.CONTAIN}
+            useNativeControls
+            style={markdownStyles.image}
+          />
+          {caption && (
+            <Text style={markdownStyles.imageCaption}>{caption}</Text>
+          )}
+        </View>
+      );
+    },
+  };
+  
   const sendMessage = async () => {
     if (!input.trim()) return;
 
@@ -189,15 +223,19 @@ const Chat = () => {
               styles.messageContent,
               item.role === "user" ? styles.userContent : styles.botContent
             ]}>
-              <Markdown 
-                style={markdownStyles}
-                rules={{
-                  code_block: renderCodeBlock,
-                  image: renderImage,
-                }}
-              >
-                {item.text}
-              </Markdown>
+
+<Markdown
+  style={markdownStyles}
+  rules={{
+    code_block: renderCodeBlock,
+    image: renderImage,
+    video: videoRule,
+  }}
+>
+  {item.text}
+</Markdown>
+
+
             </View>
             {item.role === "user" && (
               <View style={styles.userAvatar}>
