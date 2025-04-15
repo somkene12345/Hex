@@ -132,7 +132,7 @@ const Chat = () => {
     );
   };
 
-  const videoRule: MarkdownRules = {
+  const videoRule = {
     match: (source: string) =>
       /^@\[video\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/.exec(source),
   
@@ -141,25 +141,25 @@ const Chat = () => {
       title: match[2] || 'Video',
     }),
   
-    react: (node: ASTNode, output: any, state: any) => {
+    react: (node: any, children: React.ReactNode[], parentNodes: any[], styles: any, styleObj?: any, ...args: any[]): React.ReactNode[] => {
       const source = node.attributes?.href;
       const caption = node.attributes?.title;
   
-      return (
-        <View key={state.key} style={markdownStyles.imageContainer}>
+      return [
+        <View key={args[0]?.key} style={styles.imageContainer}>
           <Video
             source={{ uri: source }}
             resizeMode={ResizeMode.CONTAIN}
             useNativeControls
-            style={markdownStyles.image}
+            style={styles.image}
           />
-          {caption && (
-            <Text style={markdownStyles.imageCaption}>{caption}</Text>
-          )}
+          {caption && <Text style={styles.imageCaption}>{caption}</Text>}
         </View>
-      );
+      ];
     },
   };
+  
+  
   
   const sendMessage = async () => {
     if (!input.trim()) return;
