@@ -431,7 +431,7 @@ const markdownStyles = StyleSheet.create({
     alignItems: 'center',
   },
   image: {
-    width: '100%',
+    width: '500%',
     maxWidth: width * 0.8,
     height: 'auto',
     aspectRatio: 1,
