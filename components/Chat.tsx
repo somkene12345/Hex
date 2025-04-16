@@ -16,15 +16,11 @@ import {
 } from "react-native";
 import { fetchGroqResponse } from "../services/groqService";
 import { Ionicons } from "@expo/vector-icons";
-import Markdown, {  ASTNode } from 'react-native-markdown-display';
-import MarkdownRules from "react-native-markdown-display"
+import Markdown, { ASTNode } from "react-native-markdown-display";
 import Clipboard from '@react-native-clipboard/clipboard';
 import SyntaxHighlighter from 'react-native-syntax-highlighter';
 import { atomOneDark } from 'react-syntax-highlighter/styles/hljs';
 import { Video, ResizeMode } from 'expo-av';
-
-
-
 
 const { width } = Dimensions.get('window');
 
@@ -131,36 +127,27 @@ const Chat = () => {
       </View>
     );
   };
-
-  const videoRule = {
-    match: (source: string) =>
-      /^@\[video\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/.exec(source),
-  
-    parse: (match: RegExpExecArray) => ({
-      href: match[1],
-      title: match[2] || 'Video',
-    }),
-  
-    react: (node: any, children: React.ReactNode[], parentNodes: any[], styles: any, styleObj?: any, ...args: any[]): React.ReactNode[] => {
-      const source = node.attributes?.href;
-      const caption = node.attributes?.title;
-  
-      return [
-        <View key={args[0]?.key} style={styles.imageContainer}>
-          <Video
-            source={{ uri: source }}
-            resizeMode={ResizeMode.CONTAIN}
-            useNativeControls
-            style={styles.image}
-          />
-          {caption && <Text style={styles.imageCaption}>{caption}</Text>}
-        </View>
-      ];
-    },
+  const renderVideo = (node: ASTNode) => {
+    const source = node.attributes.src;
+    const title = node.attributes.title || 'Video';
+    
+    return (
+      <View style={markdownStyles.videoContainer}>
+        <Video
+          source={{ uri: source }}
+          style={markdownStyles.video}
+          useNativeControls
+          resizeMode={ResizeMode.CONTAIN}
+          shouldPlay={false}
+          isLooping={false}
+        />
+        {title && (
+          <Text style={markdownStyles.videoCaption}>{title}</Text>
+        )}
+      </View>
+    );
   };
-  
-  
-  
+
   const sendMessage = async () => {
     if (!input.trim()) return;
 
@@ -223,19 +210,16 @@ const Chat = () => {
               styles.messageContent,
               item.role === "user" ? styles.userContent : styles.botContent
             ]}>
-
-<Markdown
-  style={markdownStyles}
-  rules={{
-    code_block: renderCodeBlock,
-    image: renderImage,
-    video: videoRule,
-  }}
->
-  {item.text}
-</Markdown>
-
-
+              <Markdown 
+                style={markdownStyles}
+                rules={{
+                  code_block: renderCodeBlock,
+                  image: renderImage,
+                  video: renderVideo,  // Add this line
+                }}
+              >
+                {item.text}
+              </Markdown>
             </View>
             {item.role === "user" && (
               <View style={styles.userAvatar}>
@@ -481,6 +465,24 @@ const markdownStyles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
     textAlign: 'center',
+  },
+  videoContainer: {
+    marginVertical: 12,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+  },
+  video: {
+    width: '100%',
+    aspectRatio: 16/9,
+    maxWidth: width * 0.8,
+  },
+  videoCaption: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 4,
+    textAlign: 'center',
+    padding: 8,
   },
 });
 
