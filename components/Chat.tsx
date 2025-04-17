@@ -13,15 +13,12 @@ import {
   Dimensions,
   NativeSyntheticEvent,
   TextInputKeyPressEventData,
-  Keyboard,
 } from "react-native";
 import { fetchGroqResponse } from "../services/groqService";
 import { Ionicons } from "@expo/vector-icons";
 import Markdown, { ASTNode } from "react-native-markdown-display";
 import Clipboard from '@react-native-clipboard/clipboard';
-import SyntaxHighlighter from 'react-native-syntax-highlighter';
-import { atomOneDark } from 'react-syntax-highlighter/styles/hljs';
-import { Video, ResizeMode } from 'expo-av';
+import { CodeBlock, dracula } from "react-code-blocks";
 import YouTube from 'react-youtube';
 
 const { width } = Dimensions.get('window');
@@ -89,8 +86,8 @@ const Chat = () => {
     let language = 'text';
   
     node.children.forEach((child: any) => {
-      if (child.type === 'text' && typeof child.value === 'string') {
-        code += child.value;
+      if (child.type === 'text' && typeof child.content === 'string') {
+        code += child.content;
       } else if (child.type === 'code' && typeof child.lang === 'string') {
         language = child.lang || 'text';
       }
@@ -107,16 +104,19 @@ const Chat = () => {
             <Ionicons name="copy-outline" size={16} color="#f8f8f2" />
           </TouchableOpacity>
         </View>
-        <SyntaxHighlighter
+        <CodeBlock
+          text={code}
           language={language}
-          style={atomOneDark}
-          highlighter="hljs"
-          fontSize={13}
-          paddingHorizontal={16}
-          paddingVertical={12}
-        >
-          {code}
-        </SyntaxHighlighter>
+          showLineNumbers={false}
+          theme={dracula}
+          wrapLongLines
+          codeBlockStyle={{
+            fontSize: 14,
+            padding: 16,
+            margin: 0,
+            backgroundColor: "#282a36",
+          }}
+        />
       </View>
     );
   };
