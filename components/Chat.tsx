@@ -13,6 +13,7 @@ import {
   Dimensions,
   NativeSyntheticEvent,
   TextInputKeyPressEventData,
+  Keyboard,
 } from "react-native";
 import { fetchGroqResponse } from "../services/groqService";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,6 +22,7 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import SyntaxHighlighter from 'react-native-syntax-highlighter';
 import { atomOneDark } from 'react-syntax-highlighter/styles/hljs';
 import { Video, ResizeMode } from 'expo-av';
+import YouTube from 'react-youtube';
 
 const { width } = Dimensions.get('window');
 
@@ -37,6 +39,8 @@ const Chat = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [shiftPressed, setShiftPressed] = useState(false);
   const inputRef = useRef<TextInput>(null);
+  const [inputHeight, setInputHeight] = useState(40);
+
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -80,15 +84,23 @@ const Chat = () => {
     });
   };
 
-  const renderCodeBlock = (node: ASTNode) => {
-    const code = node.children[0]?.children[0]?.value || '';
-    const language = node.attributes?.language || 'text';
-    
+  const renderCodeBlock = (node: any) => {
+    let code = '';
+    let language = 'text';
+  
+    node.children.forEach((child: any) => {
+      if (child.type === 'text' && typeof child.value === 'string') {
+        code += child.value;
+      } else if (child.type === 'code' && typeof child.lang === 'string') {
+        language = child.lang || 'text';
+      }
+    });
+  
     return (
       <View style={codeBlockStyles.container}>
         <View style={codeBlockStyles.header}>
           <Text style={codeBlockStyles.language}>{language}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => Clipboard.setString(code)}
             style={codeBlockStyles.copyButton}
           >
@@ -108,6 +120,7 @@ const Chat = () => {
       </View>
     );
   };
+  
 
   const renderImage = (node: ASTNode) => {
     const source = node.attributes.src;
@@ -130,16 +143,24 @@ const Chat = () => {
   const renderVideo = (node: ASTNode) => {
     const source = node.attributes.src;
     const title = node.attributes.title || 'Video';
-    
+    const videoId = source.replace('https://www.youtube.com/watch?v=', '');
+  
     return (
       <View style={markdownStyles.videoContainer}>
-        <Video
-          source={{ uri: source }}
-          style={markdownStyles.video}
-          useNativeControls
-          resizeMode={ResizeMode.CONTAIN}
-          shouldPlay={false}
-          isLooping={false}
+        <YouTube
+          videoId={videoId}
+          opts={{
+            width: '100%',
+            height: '100%',
+            playerVars: {
+              autoplay: 0,
+              controls: 1,
+              showinfo: 0,
+              modestbranding: 1,
+              loop: 0,
+              playlist: '',
+            },
+          }}
         />
         {title && (
           <Text style={markdownStyles.videoCaption}>{title}</Text>
@@ -170,17 +191,22 @@ const Chat = () => {
       setShiftPressed(true);
       return;
     }
-
-    if (e.nativeEvent.key === 'Enter' && !shiftPressed) {
-      e.preventDefault();
-      sendMessage();
-      return;
+  
+    if (e.nativeEvent.key === 'Enter') {
+      if (!shiftPressed) {
+        e.preventDefault?.(); // optional safety
+        sendMessage();
+      } else {
+        setInput((prev) => prev + '\n');
+      }
     }
   };
-
-  const handleKeyRelease = () => {
-    setShiftPressed(false);
-  };
+  
+  const handleKeyRelease = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+    if (e.nativeEvent.key === 'Shift') {
+      setShiftPressed(false);
+    }
+  };  
 
   return (
     <KeyboardAvoidingView
@@ -244,19 +270,21 @@ const Chat = () => {
 
       <View style={styles.floatingInputContainer}>
         <View style={styles.inputWrapper}>
-          <TextInput
-            ref={inputRef}
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Type a message..."
-            placeholderTextColor="#999"
-            onKeyPress={handleKeyPress}
-            onKeyRelease={handleKeyRelease}
-            returnKeyType="default"
-            multiline
-            blurOnSubmit={false}
-          />
+        <TextInput
+  ref={inputRef}
+  style={[styles.input, { minHeight: 40, height: Math.min(120, inputHeight) }]}
+  value={input}
+  onChangeText={setInput}
+  onContentSizeChange={(e) => setInputHeight(e.nativeEvent.contentSize.height)}
+  placeholder="Type a message..."
+  placeholderTextColor="#999"
+  onKeyPress={handleKeyPress}
+  onKeyRelease={handleKeyRelease}
+  returnKeyType="default"
+  multiline
+/>
+
+
           <TouchableOpacity 
             onPress={sendMessage} 
             style={styles.sendButton}
@@ -359,7 +387,6 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    minHeight: 40,
     maxHeight: 120,
     backgroundColor: "#F5F5F5",
     borderRadius: 20,
