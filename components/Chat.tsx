@@ -236,16 +236,17 @@ const Chat = () => {
               styles.messageContent,
               item.role === "user" ? styles.userContent : styles.botContent
             ]}>
-              <Markdown 
-                style={markdownStyles}
-                rules={{
-                  code_block: renderCodeBlock,
-                  image: renderImage,
-                  video: renderVideo,  // Add this line
-                }}
-              >
-                {item.text}
-              </Markdown>
+<Markdown 
+  style={markdownStyles}
+  rules={{
+    code_block: renderCodeBlock,
+    fence: renderCodeBlock, // support triple backticks too
+    image: renderImage,
+    video: renderVideo,
+  }}
+>
+  {item.text}
+</Markdown>
             </View>
             {item.role === "user" && (
               <View style={styles.userAvatar}>
@@ -272,7 +273,7 @@ const Chat = () => {
         <View style={styles.inputWrapper}>
         <TextInput
   ref={inputRef}
-  style={[styles.input, { minHeight: 40, height: Math.min(120, inputHeight) }]}
+  style={[styles.input, { minHeight: 80, height: Math.min(160, inputHeight) }]} // minHeight now 80
   value={input}
   onChangeText={setInput}
   onContentSizeChange={(e) => setInputHeight(e.nativeEvent.contentSize.height)}
@@ -283,8 +284,6 @@ const Chat = () => {
   returnKeyType="default"
   multiline
 />
-
-
           <TouchableOpacity 
             onPress={sendMessage} 
             style={styles.sendButton}
@@ -387,14 +386,16 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    maxHeight: 120,
+    minHeight: 80,              // doubled default height
+    maxHeight: 160,             // allows more expansion
     backgroundColor: "#F5F5F5",
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: 8,         // slight bump for more breathing room
     fontSize: 16,
     marginRight: 8,
   },
+  
   sendButton: {
     width: 40,
     height: 40,
