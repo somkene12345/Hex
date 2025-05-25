@@ -19,7 +19,9 @@ import { Ionicons } from "@expo/vector-icons";
 import Markdown, { ASTNode } from "react-native-markdown-display";
 import Clipboard from '@react-native-clipboard/clipboard';
 import { CodeBlock, dracula } from "react-code-blocks";
-import YouTube from 'react-youtube';
+import YoutubePlayer from "react-native-youtube-iframe";
+import ImageViewing from 'react-native-image-viewing';
+
 
 const { width } = Dimensions.get('window');
 const screenWidth = Dimensions.get('window').width;
@@ -85,8 +87,8 @@ const Chat = () => {
 
   const renderCodeBlock = (node: ASTNode) => {
     const code = node.content || '';
-    const languageMatch = node.markup?.match(/^```(\w+)/);
-    const language = languageMatch ? languageMatch[1] : 'text';
+    const languageMatch = node.markup?.match(/```(\w+)/);
+    const language = languageMatch ? languageMatch[1].toLowerCase() : 'text';
   
     return (
       <View style={codeBlockStyles.container}>
@@ -99,21 +101,19 @@ const Chat = () => {
             <Ionicons name="copy-outline" size={16} color="#f8f8f2" />
           </TouchableOpacity>
         </View>
-        <View style={codeBlockStyles.container}>
-          <CodeBlock
-            text={code}
-            language={language}
-            showLineNumbers={false}
-            theme={dracula}
-            wrapLongLines
-            codeBlockStyle={{
-              fontSize: 14,
-              padding: 16,
-              margin: 0,
-              backgroundColor: "#282a36",
-            }}
-          />
-        </View>
+        <CodeBlock
+          text={code}
+          language={language}
+          showLineNumbers={false}
+          theme={dracula}
+          wrapLongLines
+          codeBlockStyle={{
+            fontSize: 14,
+            padding: 16,
+            margin: 0,
+            backgroundColor: "#282a36",
+          }}
+        />
       </View>
     );
   };
@@ -121,19 +121,28 @@ const Chat = () => {
   const renderImage = (node: ASTNode) => {
     const source = node.attributes.src;
     const alt = node.attributes.alt || 'Image';
-    
+    const [visible, setVisible] = useState(false);
+  
     return (
-      <View style={markdownStyles.imageContainer}>
-        <Image
-          source={{ uri: source }}
-          style={markdownStyles.image}
-          resizeMode="contain"
-          accessibilityLabel={alt}
+      <>
+        <TouchableOpacity onPress={() => setVisible(true)}>
+          <Image
+            source={{ uri: source }}
+            style={markdownStyles.image}
+            resizeMode="contain"
+            accessibilityLabel={alt}
+          />
+          {alt && alt !== 'Image' && (
+            <Text style={markdownStyles.imageCaption}>{alt}</Text>
+          )}
+        </TouchableOpacity>
+        <ImageViewing
+          images={[{ uri: source }]}
+          imageIndex={0}
+          visible={visible}
+          onRequestClose={() => setVisible(false)}
         />
-        {alt && alt !== 'Image' && (
-          <Text style={markdownStyles.imageCaption}>{alt}</Text>
-        )}
-      </View>
+      </>
     );
   };
   const renderVideo = (node: ASTNode) => {
@@ -143,20 +152,10 @@ const Chat = () => {
   
     return (
       <View style={markdownStyles.videoContainer}>
-        <YouTube
+        <YoutubePlayer
+          height={220}
+          play={false}
           videoId={videoId}
-          opts={{
-            width: '100%',
-            height: '100%',
-            playerVars: {
-              autoplay: 0,
-              controls: 1,
-              showinfo: 0,
-              modestbranding: 1,
-              loop: 0,
-              playlist: '',
-            },
-          }}
         />
         {title && (
           <Text style={markdownStyles.videoCaption}>{title}</Text>
@@ -512,7 +511,6 @@ const markdownStyles = StyleSheet.create({
 const codeBlockStyles = StyleSheet.create({
   container: {
     borderRadius: 8,
-    marginVertical: 12,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#444',

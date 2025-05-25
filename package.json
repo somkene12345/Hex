@@ -43,6 +43,7 @@
     "react-dom": "18.3.1",
     "react-native": "0.76.7",
     "react-native-gesture-handler": "~2.20.2",
+    "react-native-image-viewing": "^0.2.2",
     "react-native-markdown-display": "^7.0.2",
     "react-native-reanimated": "~3.16.1",
     "react-native-render-html": "^6.3.4",
@@ -51,6 +52,7 @@
     "react-native-syntax-highlighter": "^2.1.0",
     "react-native-web": "~0.19.13",
     "react-native-webview": "13.12.5",
+    "react-native-youtube-iframe": "^2.3.0",
     "react-syntax-highlighter": "^15.6.1",
     "react-youtube": "^10.1.0"
   },
