@@ -19,8 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Markdown, { ASTNode } from "react-native-markdown-display";
 import Clipboard from '@react-native-clipboard/clipboard';
 import { CodeBlock, dracula } from "react-code-blocks";
-import YoutubePlayer from "react-native-youtube-iframe";
-
+import YouTube from 'react-youtube';
 
 const { width } = Dimensions.get('window');
 const screenWidth = Dimensions.get('window').width;
@@ -142,10 +141,20 @@ const Chat = () => {
   
     return (
       <View style={markdownStyles.videoContainer}>
-        <YoutubePlayer
-          height={220}
-          play={false}
+        <YouTube
           videoId={videoId}
+          opts={{
+            width: '100%',
+            height: '100%',
+            playerVars: {
+              autoplay: 0,
+              controls: 1,
+              showinfo: 0,
+              modestbranding: 1,
+              loop: 0,
+              playlist: '',
+            },
+          }}
         />
         {title && (
           <Text style={markdownStyles.videoCaption}>{title}</Text>
@@ -501,6 +510,7 @@ const markdownStyles = StyleSheet.create({
 const codeBlockStyles = StyleSheet.create({
   container: {
     borderRadius: 8,
+    marginVertical: 12,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#444',
