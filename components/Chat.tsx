@@ -85,7 +85,8 @@ const Chat = () => {
 
   const renderCodeBlock = (node: ASTNode) => {
     const code = node.content || '';
-    const languageMatch = node.markup?.match(/```(\w+)/);
+    const rawInfo = (node as any).info || (node as any).markup || '';
+    const languageMatch = rawInfo.match(/^\s*(\w+)/);
     const language = languageMatch ? languageMatch[1].toLowerCase() : 'text';
   
     return (
@@ -115,6 +116,8 @@ const Chat = () => {
       </View>
     );
   };
+  
+  
   
   const renderImage = (node: ASTNode) => {
     const source = node.attributes.src;
