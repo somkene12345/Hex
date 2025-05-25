@@ -2,10 +2,11 @@ import React from 'react';
 import { createDrawerNavigator, DrawerContentComponentProps } from '@react-navigation/drawer';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { NavigationContainer } from '@react-navigation/native';
+import { withLayoutContext } from 'expo-router';
 import Index from './index';
 
-const Drawer = createDrawerNavigator();
+const DrawerNavigator = createDrawerNavigator();
+const Drawer = withLayoutContext(DrawerNavigator);
 
 function CustomDrawerContent({ navigation }: DrawerContentComponentProps) {
   return (
@@ -38,22 +39,20 @@ function ScreenWithTopBar({ navigation }: any) {
   );
 }
 
-export default function RootLayout() {
+export default function DrawerLayout() {
   return (
-    <NavigationContainer independent={true}>
-      <Drawer.Navigator
-        drawerContent={(props) => <CustomDrawerContent {...props} />}
-        screenOptions={{
-          headerShown: false,
-          drawerStyle: {
-            backgroundColor: '#111',
-            width: 250,
-          },
-        }}
-      >
-        <Drawer.Screen name="index" component={ScreenWithTopBar} />
-      </Drawer.Navigator>
-    </NavigationContainer>
+    <Drawer
+      screenOptions={{
+        headerShown: false,
+        drawerStyle: {
+          backgroundColor: '#111',
+          width: 250,
+        },
+      }}
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
+    >
+      <Drawer.Screen name="index" component={ScreenWithTopBar} />
+    </Drawer>
   );
 }
 
