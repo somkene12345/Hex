@@ -22,6 +22,8 @@ import { CodeBlock, dracula } from "react-code-blocks";
 import YouTube from 'react-youtube';
 
 const { width } = Dimensions.get('window');
+const screenWidth = Dimensions.get('window').width;
+
 
 type Message = {
   role: string;
@@ -471,41 +473,39 @@ const markdownStyles = StyleSheet.create({
     lineHeight: 18,
   },
   imageContainer: {
-    marginVertical: 8,
+    marginVertical: 12,
     alignItems: 'center',
   },
   image: {
-    width: '500%',
-    maxWidth: width * 0.8,
-    height: 'auto',
-    aspectRatio: 1,
-    borderRadius: 8,
-    backgroundColor: '#f0f0f0',
+    width: screenWidth * 0.9, // 90% of screen width
+    height: "auto",
+    aspectRatio: 1.6, // Optional: adjust based on common aspect ratio
+    resizeMode: 'contain',
   },
   imageCaption: {
-    fontSize: 14,
-    color: '#666',
+    color: '#888',
+    fontSize: 12,
     marginTop: 4,
     textAlign: 'center',
   },
   videoContainer: {
     marginVertical: 12,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#000',
+    width: screenWidth * 0.9,
+    height: (screenWidth * 0.9) * (9 / 16), // 16:9 aspect ratio
+    alignSelf: 'center',
+  },
+  videoCaption: {
+    color: '#888',
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: 'center',
   },
   video: {
     width: '100%',
     aspectRatio: 16/9,
     maxWidth: width * 0.8,
   },
-  videoCaption: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 4,
-    textAlign: 'center',
-    padding: 8,
-  },
+
 });
 
 const codeBlockStyles = StyleSheet.create({
