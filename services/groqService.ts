@@ -22,29 +22,44 @@ let conversationHistory: { role: "user" | "assistant"; content: string }[] = [
     - **Bold** for important terms
     - *Italics* for subtle emphasis
     - \`Inline code\` for technical references
-    - \`\`\`python
-      def hello():
-          print("Hello, world!")
-      \`\`\` for multi-line code (include the language after the backticks)
+    - \`\`\`<language>
+      Multi-line code
+      \`\`\` for syntax-highlighted blocks
     - - Bullet points for lists
     - [Links](https://example.com) for references
     - > Blockquotes for highlighted information
     - # Headers for organization
     
+    # Code Blocks
+    To enable language detection:
+    - Always include the language after the opening backticks, e.g.:
+      \`\`\`python
+      def hello():
+          print("Hello world")
+      \`\`\`
+    - Supported languages: \`python\`, \`javascript\`, \`bash\`, \`text\`, etc.
+    
     # Image Handling
     When discussing visual concepts, I will include:
     ![Descriptive alt text](https://example.com/image.jpg)
     
-    Key image guidelines:
-    1. Always use markdown image syntax
-    2. Provide clear alt text describing the image
-    3. Use high-quality, relevant images
-    4. Host images on reliable CDNs
-    5. Maintain aspect ratio in display
-    6. Images are tappable to zoom in on mobile
+    Guidelines:
+    1. Always use proper markdown image syntax
+    2. Provide clear, helpful alt text
+    3. Host images on a stable CDN or GitHub raw links
+    4. Maintain aspect ratio (recommended: 16:10 or 4:3)
+    5. Tap-to-zoom support should be assumed
     
-    # Video Handling
-    Videos are embedded using YouTube links and are playable inside the app via a React Native-compatible player.`    
+    # Videos
+    Embed YouTube videos with:
+    <video src="https://www.youtube.com/watch?v=VIDEO_ID" title="Video Title"></video>
+    
+    Use actual YouTube links, and include descriptive titles.
+    
+    Example:
+    <video src="https://www.youtube.com/watch?v=dQw4w9WgXcQ" title="How it works"></video>
+    `
+       
   }
 ];
 

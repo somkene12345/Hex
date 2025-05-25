@@ -84,10 +84,19 @@ const Chat = () => {
   };
 
   const renderCodeBlock = (node: ASTNode) => {
-    const code = node.content || '';
-    const rawInfo = node.markup || ''; // markup includes ```lang or just ```
-    const languageMatch = rawInfo.match(/^```(\w*)/); // capture language after backticks
-    const language = languageMatch ? languageMatch[1].toLowerCase() : 'text';
+    let code = node.content || '';
+    let language = 'text';
+  
+    // Try to extract the language from the first line
+    const lines = code.split('\n');
+    if (lines[0].startsWith('```')) {
+      const match = lines[0].match(/^```(\w+)/);
+      if (match) {
+        language = match[1];
+        lines.shift(); // Remove language line
+        code = lines.join('\n');
+      }
+    }
   
     return (
       <View style={codeBlockStyles.container}>
@@ -109,8 +118,7 @@ const Chat = () => {
           codeBlockStyle={{
             fontSize: 14,
             padding: 16,
-            margin: 0,
-            backgroundColor: "#282a36",
+            backgroundColor: '#282a36',
           }}
         />
       </View>
