@@ -36,7 +36,7 @@ const Chat = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [shiftPressed, setShiftPressed] = useState(false);
   const inputRef = useRef<TextInput>(null);
-  const [inputHeight, setInputHeight] = useState(40);
+  const [inputHeight, setInputHeight] = useState(60);
 
 
   useEffect(() => {
@@ -81,17 +81,10 @@ const Chat = () => {
     });
   };
 
-  const renderCodeBlock = (node: any) => {
-    let code = '';
-    let language = 'text';
-  
-    node.children.forEach((child: any) => {
-      if (child.type === 'text' && typeof child.content === 'string') {
-        code += child.content;
-      } else if (child.type === 'code' && typeof child.lang === 'string') {
-        language = child.lang || 'text';
-      }
-    });
+  const renderCodeBlock = (node: ASTNode) => {
+    const code = node.content || '';
+    const languageMatch = node.markup?.match(/^```(\w+)/);
+    const language = languageMatch ? languageMatch[1] : 'text';
   
     return (
       <View style={codeBlockStyles.container}>
@@ -104,24 +97,25 @@ const Chat = () => {
             <Ionicons name="copy-outline" size={16} color="#f8f8f2" />
           </TouchableOpacity>
         </View>
-        <CodeBlock
-          text={code}
-          language={language}
-          showLineNumbers={false}
-          theme={dracula}
-          wrapLongLines
-          codeBlockStyle={{
-            fontSize: 14,
-            padding: 16,
-            margin: 0,
-            backgroundColor: "#282a36",
-          }}
-        />
+        <View style={codeBlockStyles.container}>
+          <CodeBlock
+            text={code}
+            language={language}
+            showLineNumbers={false}
+            theme={dracula}
+            wrapLongLines
+            codeBlockStyle={{
+              fontSize: 14,
+              padding: 16,
+              margin: 0,
+              backgroundColor: "#282a36",
+            }}
+          />
+        </View>
       </View>
     );
   };
   
-
   const renderImage = (node: ASTNode) => {
     const source = node.attributes.src;
     const alt = node.attributes.alt || 'Image';
@@ -273,7 +267,7 @@ const Chat = () => {
         <View style={styles.inputWrapper}>
         <TextInput
   ref={inputRef}
-  style={[styles.input, { minHeight: 80, height: Math.min(160, inputHeight) }]} // minHeight now 80
+  style={[styles.input, { minHeight: 60, height: Math.min(120, inputHeight) }]} // minHeight now 80
   value={input}
   onChangeText={setInput}
   onContentSizeChange={(e) => setInputHeight(e.nativeEvent.contentSize.height)}
@@ -386,12 +380,12 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    minHeight: 80,              // doubled default height
-    maxHeight: 160,             // allows more expansion
+    minHeight: 60,              // doubled default height
+    maxHeight: 120,             // allows more expansion
     backgroundColor: "#F5F5F5",
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 8,         // slight bump for more breathing room
+    paddingVertical: 6,         // slight bump for more breathing room
     fontSize: 16,
     marginRight: 8,
   },
