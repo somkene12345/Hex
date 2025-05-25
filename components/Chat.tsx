@@ -478,7 +478,7 @@ const markdownStyles = StyleSheet.create({
   },
   image: {
     width: screenWidth * 0.9, // 90% of screen width
-    height: "auto",
+    height: undefined,
     aspectRatio: 1.6, // Optional: adjust based on common aspect ratio
     resizeMode: 'contain',
   },
@@ -490,20 +490,21 @@ const markdownStyles = StyleSheet.create({
   },
   videoContainer: {
     marginVertical: 12,
-    width: screenWidth * 0.9,
-    height: (screenWidth * 0.9) * (9 / 16), // 16:9 aspect ratio
-    alignSelf: 'center',
-  },
-  videoCaption: {
-    color: '#888',
-    fontSize: 12,
-    marginTop: 4,
-    textAlign: 'center',
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#000',
   },
   video: {
     width: '100%',
     aspectRatio: 16/9,
     maxWidth: width * 0.8,
+  },
+  videoCaption: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 4,
+    textAlign: 'center',
+    padding: 8,
   },
 
 });
