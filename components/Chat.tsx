@@ -83,20 +83,10 @@ const Chat = () => {
     });
   };
 
-  const renderCodeBlock = (node: ASTNode) => {
-    let code = node.content || '';
-    let language = 'text';
-  
-    // Try to extract the language from the first line
-    const lines = code.split('\n');
-    if (lines[0].startsWith('```')) {
-      const match = lines[0].match(/^```(\w+)/);
-      if (match) {
-        language = match[1];
-        lines.shift(); // Remove language line
-        code = lines.join('\n');
-      }
-    }
+  const renderCodeBlock = (node: any) => {
+    const code = node.content || '';
+    const languageMatch = node.markup?.match(/^```(\w+)/) || node.info?.match(/^(\w+)/);
+    const language = languageMatch ? languageMatch[1] : 'text';
   
     return (
       <View style={codeBlockStyles.container}>
@@ -118,14 +108,12 @@ const Chat = () => {
           codeBlockStyle={{
             fontSize: 14,
             padding: 16,
-            backgroundColor: '#282a36',
+            backgroundColor: "#282a36",
           }}
         />
       </View>
     );
   };
-  
-  
   
   const renderImage = (node: ASTNode) => {
     const source = node.attributes.src;
@@ -392,6 +380,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     minHeight: 60,              // doubled default height
+    height: "auto",
     maxHeight: 120,             // allows more expansion
     backgroundColor: "#F5F5F5",
     borderRadius: 20,

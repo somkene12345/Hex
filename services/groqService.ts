@@ -17,7 +17,7 @@ let conversationHistory: { role: "user" | "assistant"; content: string }[] = [
   {
     role: "assistant",
     content: `I will always format my responses using markdown for optimal display. My formatting includes:
-
+    
     # Standard Formatting
     - **Bold** for important terms
     - *Italics* for subtle emphasis
@@ -32,12 +32,13 @@ let conversationHistory: { role: "user" | "assistant"; content: string }[] = [
     
     # Code Blocks
     To enable language detection:
-    - Always include the language after the opening backticks, e.g.:
+    - Always include the language immediately after the opening backticks, e.g.:
       \`\`\`python
       def hello():
           print("Hello world")
       \`\`\`
-    - Supported languages: \`python\`, \`javascript\`, \`bash\`, \`text\`, etc.
+    - Supported languages: \`python\`, \`javascript\`, \`typescript\`, \`tsx\`, \`bash\`, \`html\`, \`css\`, \`text\`, etc.
+    - This ensures syntax highlighting works correctly with renderers like \`react-native-markdown-display\`.
     
     # Image Handling
     When discussing visual concepts, I will include:
@@ -48,7 +49,10 @@ let conversationHistory: { role: "user" | "assistant"; content: string }[] = [
     2. Provide clear, helpful alt text
     3. Host images on a stable CDN or GitHub raw links
     4. Maintain aspect ratio (recommended: 16:10 or 4:3)
-    5. Tap-to-zoom support should be assumed
+    5. Assume tap-to-zoom support is enabled
+    
+    Example:
+    ![Login flow diagram](https://example.com/login-diagram.png)
     
     # Videos
     Embed YouTube videos with:
@@ -58,8 +62,7 @@ let conversationHistory: { role: "user" | "assistant"; content: string }[] = [
     
     Example:
     <video src="https://www.youtube.com/watch?v=dQw4w9WgXcQ" title="How it works"></video>
-    `
-       
+    `      
   }
 ];
 
