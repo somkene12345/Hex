@@ -85,8 +85,8 @@ const Chat = () => {
 
   const renderCodeBlock = (node: ASTNode) => {
     const code = node.content || '';
-    const rawInfo = (node as any).info || (node as any).markup || '';
-    const languageMatch = rawInfo.match(/^\s*(\w+)/);
+    const rawInfo = node.markup || ''; // markup includes ```lang or just ```
+    const languageMatch = rawInfo.match(/^```?(\w+)/); // capture language after backticks
     const language = languageMatch ? languageMatch[1].toLowerCase() : 'text';
   
     return (
