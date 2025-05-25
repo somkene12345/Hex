@@ -20,7 +20,6 @@ import Markdown, { ASTNode } from "react-native-markdown-display";
 import Clipboard from '@react-native-clipboard/clipboard';
 import { CodeBlock, dracula } from "react-code-blocks";
 import YoutubePlayer from "react-native-youtube-iframe";
-import ImageViewing from 'react-native-image-viewing';
 
 
 const { width } = Dimensions.get('window');
@@ -121,28 +120,19 @@ const Chat = () => {
   const renderImage = (node: ASTNode) => {
     const source = node.attributes.src;
     const alt = node.attributes.alt || 'Image';
-    const [visible, setVisible] = useState(false);
-  
+    
     return (
-      <>
-        <TouchableOpacity onPress={() => setVisible(true)}>
-          <Image
-            source={{ uri: source }}
-            style={markdownStyles.image}
-            resizeMode="contain"
-            accessibilityLabel={alt}
-          />
-          {alt && alt !== 'Image' && (
-            <Text style={markdownStyles.imageCaption}>{alt}</Text>
-          )}
-        </TouchableOpacity>
-        <ImageViewing
-          images={[{ uri: source }]}
-          imageIndex={0}
-          visible={visible}
-          onRequestClose={() => setVisible(false)}
+      <View style={markdownStyles.imageContainer}>
+        <Image
+          source={{ uri: source }}
+          style={markdownStyles.image}
+          resizeMode="contain"
+          accessibilityLabel={alt}
         />
-      </>
+        {alt && alt !== 'Image' && (
+          <Text style={markdownStyles.imageCaption}>{alt}</Text>
+        )}
+      </View>
     );
   };
   const renderVideo = (node: ASTNode) => {
