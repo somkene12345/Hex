@@ -31,7 +31,7 @@ let conversationHistory: { role: "user" | "assistant"; content: string }[] = [
 To ensure full compatibility with the custom renderer:
 
 ✅ Always provide a language for each code block.  
-✅ The **first line inside** the code block must be the language.  
+✅ The **first line** under the triple backticks must be the programming language name.  
 ✅ The code itself must begin on the second line.  
 ✅ If not followed exactly, the code will be treated as plain \`text\`.
 
