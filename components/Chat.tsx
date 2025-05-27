@@ -85,29 +85,35 @@ const Chat = () => {
 
   const renderCodeBlock = (node: any) => {
     const rawContent = node.content || '';
-    const rawMarkup = node.markup || ''; // often like '```python' or just '```'
-    const languageMatch = rawMarkup.match(/^```(\w+)/);
-    const language = languageMatch ? languageMatch[1].toLowerCase() : 'text';
+    const lines = rawContent.split('\n');
   
-    console.log('🧩 renderCodeBlock debug:');
-    console.log('> node.markup:', rawMarkup);
-    console.log('> node.info:', node.info);
-    console.log('> node.content:', rawContent);
-    console.log('> extracted language:', language);
+    // First line is the language (if exists and looks valid)
+    let language = 'text';
+    let code = rawContent;
+  
+    if (lines.length > 1) {
+      const firstLine = lines[0].trim().toLowerCase();
+  
+      // Simple validation: check if firstLine is a known language or just letters
+      if (/^[a-zA-Z]+$/.test(firstLine)) {
+        language = firstLine;
+        code = lines.slice(1).join('\n');
+      }
+    }
   
     return (
       <View style={codeBlockStyles.container}>
         <View style={codeBlockStyles.header}>
           <Text style={codeBlockStyles.language}>{language}</Text>
           <TouchableOpacity
-            onPress={() => Clipboard.setString(rawContent)}
+            onPress={() => Clipboard.setString(code)}
             style={codeBlockStyles.copyButton}
           >
             <Ionicons name="copy-outline" size={16} color="#f8f8f2" />
           </TouchableOpacity>
         </View>
         <CodeBlock
-          text={rawContent}
+          text={code}
           language={language}
           showLineNumbers={false}
           theme={dracula}
@@ -115,7 +121,7 @@ const Chat = () => {
           codeBlockStyle={{
             fontSize: 14,
             padding: 16,
-            backgroundColor: "#282a36",
+            backgroundColor: '#282a36',
           }}
         />
       </View>
