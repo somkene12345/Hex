@@ -85,11 +85,13 @@ const Chat = () => {
 
   const renderCodeBlock = (node: any) => {
     const rawContent = node.content || '';
-    const rawInfo = node.info;
-    const language = rawInfo?.trim().toLowerCase() || 'text';
+    const rawMarkup = node.markup || ''; // often like '```python' or just '```'
+    const languageMatch = rawMarkup.match(/^```(\w+)/);
+    const language = languageMatch ? languageMatch[1].toLowerCase() : 'text';
   
     console.log('🧩 renderCodeBlock debug:');
-    console.log('> node.info:', rawInfo);
+    console.log('> node.markup:', rawMarkup);
+    console.log('> node.info:', node.info);
     console.log('> node.content:', rawContent);
     console.log('> extracted language:', language);
   
