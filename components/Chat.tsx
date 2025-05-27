@@ -18,7 +18,7 @@ import { fetchGroqResponse } from "../services/groqService";
 import { Ionicons } from "@expo/vector-icons";
 import Markdown, { ASTNode } from "react-native-markdown-display";
 import Clipboard from '@react-native-clipboard/clipboard';
-import { CodeBlock, dracula } from "react-code-blocks";
+import { CodeBlock, atomOneDark } from "react-code-blocks";
 import YouTube from 'react-youtube';
 
 const { width } = Dimensions.get('window');
@@ -116,7 +116,7 @@ const Chat = () => {
           text={code}
           language={language}
           showLineNumbers={false}
-          theme={dracula}
+          theme={atomOneDark}
           wrapLongLines
           codeBlockStyle={{
             fontSize: 14,
