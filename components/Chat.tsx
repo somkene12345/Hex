@@ -84,23 +84,28 @@ const Chat = () => {
   };
 
   const renderCodeBlock = (node: any) => {
-    const code = node.content || '';
+    const rawContent = node.content || '';
+    const rawInfo = node.info;
+    const language = rawInfo?.trim().toLowerCase() || 'text';
   
-    const language = node.info?.trim().toLowerCase() || 'text';
+    console.log('🧩 renderCodeBlock debug:');
+    console.log('> node.info:', rawInfo);
+    console.log('> node.content:', rawContent);
+    console.log('> extracted language:', language);
   
     return (
       <View style={codeBlockStyles.container}>
         <View style={codeBlockStyles.header}>
           <Text style={codeBlockStyles.language}>{language}</Text>
           <TouchableOpacity
-            onPress={() => Clipboard.setString(code)}
+            onPress={() => Clipboard.setString(rawContent)}
             style={codeBlockStyles.copyButton}
           >
             <Ionicons name="copy-outline" size={16} color="#f8f8f2" />
           </TouchableOpacity>
         </View>
         <CodeBlock
-          text={code}
+          text={rawContent}
           language={language}
           showLineNumbers={false}
           theme={dracula}
@@ -114,6 +119,7 @@ const Chat = () => {
       </View>
     );
   };
+  
     
   const renderImage = (node: ASTNode) => {
     const source = node.attributes.src;
