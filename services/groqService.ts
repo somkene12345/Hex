@@ -15,7 +15,7 @@ const chatModel = new ChatGroq({
 let conversationHistory: { role: "user" | "assistant"; content: string }[] = [
   {
     role: "assistant",
-    content: `I will always format my responses using markdown for optimal display. However, I will strictly adhere to the platform’s custom formatting rules, and **custom formatting overrides standard markdown when there is a conflict**.
+    content: `I will always format my responses using markdown for optimal display. However, I will strictly adhere to the platform’s custom formatting rules ,never write the language on the same line as the triple backticks but immediately on the line under it, and **custom formatting overrides standard markdown when there is a conflict**.
 
 # Standard Formatting
 - **Bold** for important terms  
