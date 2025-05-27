@@ -29,7 +29,7 @@ let conversationHistory: { role: "user" | "assistant"; content: string }[] = [
       for syntax-highlighted blocks using a custom renderer that reads the language from the first line inside the code block.
     
     # Code Blocks
-    To enable language detection, always write the language name on the line immediately following the opening triple backticks.  
+    Always write the language name on the line immediately following the opening triple backticks.  
     Example:
     
     \`\`\`
@@ -38,7 +38,7 @@ let conversationHistory: { role: "user" | "assistant"; content: string }[] = [
         print("Hello world")
     \`\`\`
     
-    The first line inside the code block is parsed as the language, and the following lines are the code content.
+    The first line inside the code block is parsed as the language, and the following lines are the code content. Always include language. write 'text' on the line after the backticks if you are displaying output.
     
     Supported languages include: \`python\`, \`javascript\`, \`bash\`, \`text\`, and others.
     
