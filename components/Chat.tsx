@@ -85,14 +85,12 @@ const Chat = () => {
     const rawContent = node.content || '';
     const lines = rawContent.split('\n');
   
-    // First line is the language (if exists and looks valid)
+    // Detect language from first line
     let language = 'text';
     let code = rawContent;
   
     if (lines.length > 1) {
       const firstLine = lines[0].trim().toLowerCase();
-  
-      // Simple validation: check if firstLine is a known language or just letters
       if (/^[a-zA-Z]+$/.test(firstLine)) {
         language = firstLine;
         code = lines.slice(1).join('\n');
@@ -107,28 +105,28 @@ const Chat = () => {
             onPress={() => Clipboard.setString(code)}
             style={codeBlockStyles.copyButton}
           >
-            <Ionicons name="copy-outline" size={16} color="#f8f8f2" />
+            <Ionicons name="copy-outline" size={16} color="#d4d4d4" />
           </TouchableOpacity>
         </View>
         <CodeBlock
           text={code}
           language={language}
           showLineNumbers={false}
-          theme={github}
           wrapLongLines
           codeBlockStyle={{
-            fontSize: 15,
+            backgroundColor: '#1e1e1e',
+            color: '#d4d4d4',
+            fontFamily: 'Fira Code, Consolas, Monaco, "Courier New", monospace',
+            fontSize: 14,
             padding: 16,
-            backgroundColor: '#f6f8fa', // GitHub-like background
-            fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
-            borderRadius: 8,
-            color: '#24292e',
-            borderWidth: 1,
-            borderColor: '#d1d5da',
-        
-          }}
-          />
-            </View>
+            borderRadius: 0, // matches the container's rounded top/bottom
+            lineHeight: 20,
+            overflowX: 'auto',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+          }}          
+        />
+      </View>
     );
   };
   
@@ -553,29 +551,30 @@ const markdownStyles = StyleSheet.create({
 
 const codeBlockStyles = StyleSheet.create({
   container: {
-    borderRadius: 8,
+    borderRadius: 6,
     marginVertical: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#444',
+    borderColor: '#3c3c3c', // closer to VS Code border color
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#343746',
+    backgroundColor: '#2d2d2d', // darker header like VS Code tabs
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#444',
+    borderBottomColor: '#3c3c3c',
   },
   language: {
-    color: '#f8f8f2',
-    fontSize: 14,
-    fontFamily: 'monospace',
+    color: '#cccccc',
+    fontSize: 12,
+    fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+    textTransform: 'uppercase',
   },
   copyButton: {
-    padding: 4,
+    padding: 6,
   },
 });
 
