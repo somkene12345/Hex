@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   View,
-  TextInput,
   TouchableOpacity,
   FlatList,
   Text,
@@ -11,14 +10,13 @@ import {
   Image,
   Animated,
   Dimensions,
-  NativeSyntheticEvent,
-  TextInputKeyPressEventData,
+  TextInput as RNTextInput
 } from "react-native";
 import { fetchGroqResponse } from "../services/groqService";
 import { Ionicons } from "@expo/vector-icons";
 import Markdown, { ASTNode } from "react-native-markdown-display";
 import Clipboard from '@react-native-clipboard/clipboard';
-import { CodeBlock, vs2015 } from "react-code-blocks";
+import { CodeBlock, github } from "react-code-blocks";
 import YouTube from 'react-youtube';
 
 const { width } = Dimensions.get('window');
@@ -32,12 +30,12 @@ type Message = {
 
 const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const flatListRef = useRef<FlatList>(null);
+  const [input, setInput] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef(null);  const flatListRef = useRef<FlatList>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [shiftPressed, setShiftPressed] = useState(false);
-  const inputRef = useRef<TextInput>(null);
   const [inputHeight, setInputHeight] = useState(60);
 
 
@@ -116,15 +114,21 @@ const Chat = () => {
           text={code}
           language={language}
           showLineNumbers={false}
-          theme={vs2015}
+          theme={github}
           wrapLongLines
           codeBlockStyle={{
-            fontSize: 14,
+            fontSize: 15,
             padding: 16,
-            backgroundColor: '#282a36',
+            backgroundColor: '#f6f8fa', // GitHub-like background
+            fontFamily: 'Menlo, Consolas, "Courier New", monospace',
+            borderRadius: 8,
+            color: '#24292e',
+            borderWidth: 1,
+            borderColor: '#d1d5da',
+        
           }}
-        />
-      </View>
+          />
+            </View>
     );
   };
   
@@ -193,27 +197,23 @@ const Chat = () => {
     }
   };
 
-  const handleKeyPress = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
-    if (e.nativeEvent.key === 'Shift') {
-      setShiftPressed(true);
-      return;
-    }
-  
-    if (e.nativeEvent.key === 'Enter') {
-      if (!shiftPressed) {
-        e.preventDefault?.(); // optional safety
-        sendMessage();
-      } else {
-        setInput((prev) => prev + '\n');
-      }
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+      setInput('');
+      setInputHeight(60);
     }
   };
-  
-  const handleKeyRelease = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
-    if (e.nativeEvent.key === 'Shift') {
-      setShiftPressed(false);
-    }
-  };  
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+
+    const lines = e.target.value.split('\n').length;
+    const newHeight = Math.min(120, Math.max(60, lines * 24));
+    setInputHeight(newHeight);
+  };
+
 
   return (
     <KeyboardAvoidingView
@@ -243,17 +243,17 @@ const Chat = () => {
               styles.messageContent,
               item.role === "user" ? styles.userContent : styles.botContent
             ]}>
-<Markdown 
-  style={markdownStyles}
-  rules={{
-    code_block: renderCodeBlock,
-    fence: renderCodeBlock, // support triple backticks too
-    image: renderImage,
-    video: renderVideo,
-  }}
->
-  {item.text}
-</Markdown>
+              <Markdown
+                style={markdownStyles}
+                rules={{
+                  code_block: renderCodeBlock,
+                  fence: renderCodeBlock,
+                  image: renderImage,
+                  video: renderVideo,
+                }}
+              >
+                {item.text}
+              </Markdown>
             </View>
             {item.role === "user" && (
               <View style={styles.userAvatar}>
@@ -265,7 +265,7 @@ const Chat = () => {
         onScroll={handleScroll}
         scrollEventThrottle={16}
       />
-
+  
       {showScrollButton && (
         <Animated.View style={[styles.scrollButton, { opacity: fadeAnim }]}>
           <TouchableOpacity onPress={scrollToBottom}>
@@ -275,30 +275,59 @@ const Chat = () => {
           </TouchableOpacity>
         </Animated.View>
       )}
-
+  
       <View style={styles.floatingInputContainer}>
         <View style={styles.inputWrapper}>
-        <TextInput
-  ref={inputRef}
-  style={[styles.input, { minHeight: 60, height: Math.min(120, inputHeight) }]} // minHeight now 80
-  value={input}
-  onChangeText={setInput}
-  onContentSizeChange={(e) => setInputHeight(e.nativeEvent.contentSize.height)}
-  placeholder="Type a message..."
-  placeholderTextColor="#999"
-  onKeyPress={handleKeyPress}
-  onKeyRelease={handleKeyRelease}
-  returnKeyType="default"
-  multiline
-/>
-          <TouchableOpacity 
-            onPress={sendMessage} 
+          {Platform.OS === 'web' ? (
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message..."
+              style={{
+                minHeight: 60,
+                height: inputHeight,
+                maxHeight: 120,
+                resize: 'none',
+                width: '100%',
+                padding: 12,
+                borderRadius: 20,
+                fontSize: 16,
+                border: 'none',
+                backgroundColor: '#F5F5F5',
+                outline: 'none',
+              }}
+            />
+          ) : (
+            <RNTextInput
+              ref={inputRef}
+              value={input}
+              onChangeText={(text) => setInput(text)}
+              onContentSizeChange={(e) => {
+                const height = e.nativeEvent.contentSize.height;
+                setInputHeight(Math.max(60, Math.min(height, 120)));
+              }}
+              placeholder="Type a message..."
+              placeholderTextColor="#999"
+              multiline
+              style={[
+                styles.input,
+                {
+                  height: Math.max(60, Math.min(inputHeight, 120)),
+                },
+              ]}
+            />
+          )}
+  
+          <TouchableOpacity
+            onPress={sendMessage}
             style={styles.sendButton}
             disabled={!input.trim()}
           >
-            <Ionicons 
-              name="send" 
-              size={20} 
+            <Ionicons
+              name="send"
+              size={20}
               color={input.trim() ? "white" : "#ccc"}
             />
           </TouchableOpacity>
@@ -306,7 +335,7 @@ const Chat = () => {
       </View>
     </KeyboardAvoidingView>
   );
-};
+}  
 
 const styles = StyleSheet.create({
   container: {
@@ -394,7 +423,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     minHeight: 60,              // doubled default height
-    height: "auto",
     maxHeight: 120,             // allows more expansion
     backgroundColor: "#F5F5F5",
     borderRadius: 20,
