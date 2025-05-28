@@ -294,6 +294,7 @@ const Chat = () => {
                 padding: 12,
                 borderRadius: 20,
                 fontSize: 16,
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
                 border: 'none',
                 backgroundColor: '#F5F5F5',
                 outline: 'none',
@@ -428,6 +429,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 6,         // slight bump for more breathing room
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     fontSize: 16,
     marginRight: 8,
   },
@@ -443,7 +445,7 @@ const styles = StyleSheet.create({
   scrollButton: {
     position: 'absolute',
     left: width / 2 - 20, 
-    bottom: 90,
+    bottom: 140,
     zIndex: 10,
   },
   scrollButtonInner: {
