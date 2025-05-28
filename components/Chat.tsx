@@ -120,7 +120,7 @@ const Chat = () => {
             fontSize: 15,
             padding: 16,
             backgroundColor: '#f6f8fa', // GitHub-like background
-            fontFamily: 'Menlo, Consolas, "Courier New", monospace',
+            fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
             borderRadius: 8,
             color: '#24292e',
             borderWidth: 1,
