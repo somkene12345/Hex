@@ -87,7 +87,7 @@ export const fetchGroqResponse = async (message: string) => {
     // Add user message to history with markdown hint
     conversationHistory.push({ 
       role: "user", 
-      content: `${message} ([this is a system message, don't forget]Remember language under the backticks if you need a code block)` 
+      content: `${message} ([this is a system message, don't forget, you don't need to say it]Remember language under the backticks if you need a code block)` 
     });
 
     // Invoke the chat model with memory
