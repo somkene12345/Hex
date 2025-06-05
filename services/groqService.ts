@@ -1,6 +1,6 @@
 import { ChatGroq } from "@langchain/groq";
 
-const GROQ_API_KEY = "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"; // Store securely
+const GROQ_API_KEY = "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"; // Store securely
 const GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"; // Choose the appropriate model
 const TEMPERATURE = 0.7; // Adjust for creativity
 
@@ -87,7 +87,7 @@ export const fetchGroqResponse = async (message: string) => {
     // Add user message to history with markdown hint
     conversationHistory.push({ 
       role: "user", 
-      content: `${message} ([this is a system message, don't forget, you don't need to say it]Remember language under the backticks if you need a code block)` 
+      content: `${message} ([this is a system message, don't forget, you don't need to say it]Remember language under the backticks if you need to illustrate with a code block if not do not add a code block)` 
     });
 
     // Invoke the chat model with memory
