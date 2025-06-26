@@ -74,7 +74,7 @@ export default function RootLayout() {
         }}
         drawerContent={(props) => <CustomDrawerContent {...props} />}
       >
-        <Drawer.Screen name="Hex" component={ScreenWithTopBar} />
+        <Drawer.Screen name="Home" component={ScreenWithTopBar} />
       </Drawer.Navigator>
     </NavigationContainer>
   );
