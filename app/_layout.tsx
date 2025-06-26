@@ -31,10 +31,32 @@ function CustomDrawerContent({ navigation }: any) {
   );
 }
 
-function TopBar({ onToggleTheme, darkMode }: { onToggleTheme: () => void; darkMode: boolean }) {
+function TopBar({
+  onToggleTheme,
+  darkMode,
+  navigation,
+}: {
+  onToggleTheme: () => void;
+  darkMode: boolean;
+  navigation: any;
+}) {
   return (
     <View style={[styles.topBar, { backgroundColor: darkMode ? '#111' : '#f5f5f5' }]}>
-      <Text style={[styles.topBarTitle, { color: darkMode ? '#fff' : '#000' }]}>Hex</Text>
+      {/* Drawer Button */}
+      <TouchableOpacity onPress={() => navigation.openDrawer()}>
+        <Ionicons
+          name="menu"
+          size={24}
+          color={darkMode ? '#fff' : '#000'}
+          style={{ marginRight: 12 }}
+        />
+      </TouchableOpacity>
+
+      <Text style={[styles.topBarTitle, { color: darkMode ? '#fff' : '#000', flex: 1 }]}>
+        Hex
+      </Text>
+
+      {/* Theme Toggle Button */}
       <TouchableOpacity onPress={onToggleTheme}>
         <Ionicons
           name={darkMode ? 'sunny' : 'moon'}
@@ -46,6 +68,7 @@ function TopBar({ onToggleTheme, darkMode }: { onToggleTheme: () => void; darkMo
   );
 }
 
+
 function ScreenWithTopBar({ navigation }: any) {
   const systemColorScheme = useColorScheme();
   const [darkMode, setDarkMode] = useState(systemColorScheme === 'dark');
@@ -55,11 +78,12 @@ function ScreenWithTopBar({ navigation }: any) {
   return (
     <View style={{ flex: 1, backgroundColor: darkMode ? '#000' : '#fff' }}>
       <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} />
-      <TopBar onToggleTheme={toggleTheme} darkMode={darkMode} />
+      <TopBar onToggleTheme={toggleTheme} darkMode={darkMode} navigation={navigation} />
       <Index />
     </View>
   );
 }
+
 
 export default function RootLayout() {
   return (
