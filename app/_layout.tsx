@@ -63,7 +63,6 @@ function ScreenWithTopBar({ navigation }: any) {
 
 export default function RootLayout() {
   return (
-    <NavigationContainer>
       <Drawer.Navigator
         screenOptions={{
           headerShown: false,
@@ -76,7 +75,6 @@ export default function RootLayout() {
       >
         <Drawer.Screen name="Home" component={ScreenWithTopBar} />
       </Drawer.Navigator>
-    </NavigationContainer>
   );
 }
 
