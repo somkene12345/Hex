@@ -18,7 +18,9 @@ import Markdown, { ASTNode } from "react-native-markdown-display";
 import Clipboard from '@react-native-clipboard/clipboard';
 import { CodeBlock, github } from "react-code-blocks";
 import YouTube from 'react-youtube';
+import { useTheme } from '../theme/ThemeContext'; // adjust path
 
+const { darkMode } = useTheme();
 const { width } = Dimensions.get('window');
 const screenWidth = Dimensions.get('window').width;
 
@@ -114,12 +116,12 @@ const Chat = () => {
           showLineNumbers={false}
           wrapLongLines
           codeBlockStyle={{
-            backgroundColor: '#1e1e1e',
-            color: '#d4d4d4',
+            backgroundColor: darkMode ? '#1e1e1e' : '#f5f5f5',
+            color: darkMode ? '#d4d4d4' : '#111',
             fontFamily: 'Fira Code, Consolas, Monaco, "Courier New", monospace',
             fontSize: 14,
             padding: 16,
-            borderRadius: 0, // matches the container's rounded top/bottom
+            borderRadius: 0,
             lineHeight: 20,
             overflowX: 'auto',
             whiteSpace: 'pre-wrap',
@@ -294,8 +296,9 @@ const Chat = () => {
                 fontSize: 16,
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
                 border: 'none',
-                backgroundColor: '#F5F5F5',
+                backgroundColor: darkMode ? '#2A2A2A' : '#F5F5F5',
                 outline: 'none',
+                color: darkMode ? '#FFF' : '#000',
               }}
             />
           ) : (
@@ -339,26 +342,26 @@ const Chat = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: darkMode ? '#121212' : '#FAFAFA',
   },
   messagesContainer: {
     padding: 16,
     paddingBottom: 100,
   },
   messageWrapper: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     marginBottom: 12,
-    width: "100%",
+    width: '100%',
   },
   botWrapper: {
-    justifyContent: "flex-start",
+    justifyContent: 'flex-start',
   },
   userWrapper: {
-    justifyContent: "flex-end",
+    justifyContent: 'flex-end',
   },
   messageContent: {
-    maxWidth: "80%",
+    maxWidth: '80%',
     paddingVertical: 5,
     paddingHorizontal: 16,
     borderRadius: 18,
@@ -366,20 +369,20 @@ const styles = StyleSheet.create({
     display: 'flex',
   },
   botContent: {
-    backgroundColor: "transparent",
+    backgroundColor: 'transparent',
     marginLeft: 8,
   },
   userContent: {
-    backgroundColor: "#EAEAEA",
+    backgroundColor: darkMode ? '#333' : '#EAEAEA',
     marginRight: 8,
   },
   botAvatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#E3F2FD",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: darkMode ? '#1E1E1E' : '#E3F2FD',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 8,
     overflow: 'hidden',
   },
@@ -392,9 +395,9 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#007AFF",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   floatingInputContainer: {
     position: 'absolute',
@@ -404,13 +407,13 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 0 : 8,
   },
   inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFF",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: darkMode ? '#1E1E1E' : '#FFF',
     borderRadius: 25,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -421,33 +424,33 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    minHeight: 60,              // doubled default height
-    maxHeight: 120,             // allows more expansion
-    backgroundColor: "#F5F5F5",
+    minHeight: 60,
+    maxHeight: 120,
+    backgroundColor: darkMode ? '#2A2A2A' : '#F5F5F5',
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 6,         // slight bump for more breathing room
+    paddingVertical: 6,
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     fontSize: 16,
     marginRight: 8,
+    color: darkMode ? '#FFF' : '#000',
   },
-  
   sendButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#007AFF",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollButton: {
     position: 'absolute',
-    left: width / 2 - 20, 
+    left: width / 2 - 20,
     bottom: 140,
     zIndex: 10,
   },
   scrollButtonInner: {
-    backgroundColor: 'white',
+    backgroundColor: darkMode ? '#1E1E1E' : 'white',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -463,67 +466,68 @@ const styles = StyleSheet.create({
 
 const markdownStyles = StyleSheet.create({
   body: {
-    color: "#333",
+    color: darkMode ? '#E0E0E0' : '#333',
     fontSize: 16,
     lineHeight: 24,
   },
   heading1: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#000",
+    fontWeight: 'bold',
+    color: darkMode ? '#FFF' : '#000',
     marginVertical: 8,
   },
   heading2: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: "#000",
+    fontWeight: 'bold',
+    color: darkMode ? '#FFF' : '#000',
     marginVertical: 6,
   },
   heading3: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#000",
+    fontWeight: 'bold',
+    color: darkMode ? '#FFF' : '#000',
     marginVertical: 4,
   },
   paragraph: {
     fontSize: 16,
-    color: "#333",
+    color: darkMode ? '#D3D3D3' : '#333',
     lineHeight: 24,
     marginVertical: 4,
   },
   strong: {
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   em: {
-    fontStyle: "italic",
+    fontStyle: 'italic',
   },
   u: {
-    textDecorationLine: "underline",
+    textDecorationLine: 'underline',
   },
   s: {
-    textDecorationLine: "line-through",
+    textDecorationLine: 'line-through',
   },
   code_inline: {
-    fontFamily: "monospace",
+    fontFamily: 'monospace',
     fontSize: 14,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: darkMode ? '#333' : '#f5f5f5',
     borderRadius: 3,
     paddingHorizontal: 4,
     paddingVertical: 2,
     lineHeight: 18,
+    color: darkMode ? '#EAEAEA' : '#000',
   },
   imageContainer: {
     marginVertical: 12,
     alignItems: 'center',
   },
   image: {
-    width: screenWidth * 0.9, // 90% of screen width
+    width: screenWidth * 0.9,
     height: undefined,
-    aspectRatio: 1.6, // Optional: adjust based on common aspect ratio
+    aspectRatio: 1.6,
     resizeMode: 'contain',
   },
   imageCaption: {
-    color: '#888',
+    color: darkMode ? '#AAA' : '#888',
     fontSize: 12,
     marginTop: 4,
     textAlign: 'center',
@@ -536,17 +540,16 @@ const markdownStyles = StyleSheet.create({
   },
   video: {
     width: '100%',
-    aspectRatio: 16/9,
+    aspectRatio: 16 / 9,
     maxWidth: width * 0.8,
   },
   videoCaption: {
     fontSize: 14,
-    color: '#999',
+    color: darkMode ? '#AAA' : '#999',
     marginTop: 4,
     textAlign: 'center',
     padding: 8,
   },
-
 });
 
 const codeBlockStyles = StyleSheet.create({
@@ -555,20 +558,20 @@ const codeBlockStyles = StyleSheet.create({
     marginVertical: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#3c3c3c', // closer to VS Code border color
+    borderColor: darkMode ? '#555' : '#3c3c3c',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#2d2d2d', // darker header like VS Code tabs
+    backgroundColor: darkMode ? '#1E1E1E' : '#2d2d2d',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#3c3c3c',
+    borderBottomColor: darkMode ? '#444' : '#3c3c3c',
   },
   language: {
-    color: '#cccccc',
+    color: darkMode ? '#BBB' : '#cccccc',
     fontSize: 12,
     fontFamily: 'Consolas, Monaco, "Courier New", monospace',
     textTransform: 'uppercase',

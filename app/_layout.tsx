@@ -12,6 +12,8 @@ import {
 import { NavigationContainer } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Index from './index';
+import { ThemeProvider } from '../theme/ThemeContext';
+
 
 const Drawer = createDrawerNavigator();
 
@@ -69,6 +71,7 @@ function TopBar({
 }
 
 
+
 function ScreenWithTopBar({ navigation }: any) {
   const systemColorScheme = useColorScheme();
   const [darkMode, setDarkMode] = useState(systemColorScheme === 'dark');
@@ -85,8 +88,10 @@ function ScreenWithTopBar({ navigation }: any) {
 }
 
 
+
 export default function RootLayout() {
   return (
+    <ThemeProvider>
       <Drawer.Navigator
         screenOptions={{
           headerShown: false,
@@ -99,6 +104,7 @@ export default function RootLayout() {
       >
         <Drawer.Screen name="Home" component={ScreenWithTopBar} />
       </Drawer.Navigator>
+      </ThemeProvider>
   );
 }
 
