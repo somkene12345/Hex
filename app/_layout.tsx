@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   useColorScheme,
-  Appearance,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
