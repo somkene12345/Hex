@@ -20,7 +20,6 @@ import { CodeBlock, github } from "react-code-blocks";
 import YouTube from 'react-youtube';
 import { useTheme } from '../theme/ThemeContext'; // adjust path
 
-const { darkMode } = useTheme();
 const { width } = Dimensions.get('window');
 const screenWidth = Dimensions.get('window').width;
 
@@ -339,7 +338,7 @@ const Chat = () => {
   );
 }  
 
-const styles = StyleSheet.create({
+const getStyles = (darkMode: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: darkMode ? '#121212' : '#FAFAFA',
@@ -464,8 +463,8 @@ const styles = StyleSheet.create({
   },
 });
 
-const markdownStyles = StyleSheet.create({
-  body: {
+export const getMarkdownStyles = (darkMode: boolean) => StyleSheet.create({
+    body: {
     color: darkMode ? '#E0E0E0' : '#333',
     fontSize: 16,
     lineHeight: 24,
@@ -552,8 +551,8 @@ const markdownStyles = StyleSheet.create({
   },
 });
 
-const codeBlockStyles = StyleSheet.create({
-  container: {
+export const getCodeBlockStyles = (darkMode: boolean) => StyleSheet.create({
+    container: {
     borderRadius: 6,
     marginVertical: 12,
     overflow: 'hidden',
@@ -580,5 +579,9 @@ const codeBlockStyles = StyleSheet.create({
     padding: 6,
   },
 });
+const { darkMode } = useTheme();
+const styles = getStyles(darkMode);
+const markdownStyles = getMarkdownStyles(darkMode);
+const codeBlockStyles = getCodeBlockStyles(darkMode);
 
 export default Chat;
