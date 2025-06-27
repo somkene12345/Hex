@@ -479,7 +479,7 @@ const codeBlockStyles = getCodeBlockStyles(darkMode);
             {item.role === "bot" && (
               <View style={styles.botAvatar}>
                 <Image
-                  source={{ uri: 'https://github.com/somkene12345/Hex/blob/main/assets/images/icon.png?raw=true' }}
+                  source={{ uri: 'https://hex-jet.vercel.app/favicon.ico' }}
                   style={styles.botAvatarImage}
                 />
               </View>

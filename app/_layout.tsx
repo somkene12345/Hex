@@ -17,20 +17,38 @@ import { ThemeProvider, useTheme } from '../theme/ThemeContext';
 const Drawer = createDrawerNavigator();
 
 function CustomDrawerContent({ navigation }: any) {
+  const { darkMode } = useTheme(); // ✅ Use theme context
+
   return (
-    <View style={styles.drawerContainer}>
+    <View
+      style={[
+        styles.drawerContainer,
+        { backgroundColor: darkMode ? '#111' : '#fff' },
+      ]}
+    >
       <TouchableOpacity
-        style={styles.newChatButton}
+        style={[
+          styles.newChatButton,
+          { backgroundColor: darkMode ? '#333' : '#e0e0e0' },
+        ]}
         onPress={() => {
           navigation.navigate('Home');
           navigation.closeDrawer();
         }}
       >
-        <Text style={styles.newChatText}>+ New Chat</Text>
+        <Text
+          style={[
+            styles.newChatText,
+            { color: darkMode ? '#fff' : '#000' },
+          ]}
+        >
+          + New Chat
+        </Text>
       </TouchableOpacity>
     </View>
   );
 }
+
 
 function TopBar({
   onToggleTheme,
@@ -80,19 +98,22 @@ function ScreenWithTopBar({ navigation }: any) {
 }
 
 export default function RootLayout() {
+  const { darkMode, toggleTheme } = useTheme(); // ✅ now using ThemeContext
   return (
     <ThemeProvider>
       <Drawer.Navigator
         screenOptions={{
           headerShown: false,
           drawerStyle: {
-            backgroundColor: '#111',
+            backgroundColor: darkMode ? '#111' : '#fff', // ✅ dynamic theme support
             width: 240,
           },
         }}
         drawerContent={(props) => <CustomDrawerContent {...props} />}
       >
-        <Drawer.Screen name="Home" component={ScreenWithTopBar} />
+<Drawer.Screen name="Home">
+  {() => <ScreenWithTopBar key={Date.now()} />}
+</Drawer.Screen>
         </Drawer.Navigator>
     </ThemeProvider>
   );
