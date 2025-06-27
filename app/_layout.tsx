@@ -93,7 +93,7 @@ export default function RootLayout() {
         drawerContent={(props) => <CustomDrawerContent {...props} />}
       >
         <Drawer.Screen name="Home" component={ScreenWithTopBar} />
-      </Drawer.Navigator>
+        </Drawer.Navigator>
     </ThemeProvider>
   );
 }

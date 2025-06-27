@@ -20,9 +20,6 @@ import { CodeBlock, github } from "react-code-blocks";
 import YouTube from 'react-youtube';
 import { useTheme } from '../theme/ThemeContext'; // adjust path
 
-const { width } = Dimensions.get('window');
-const screenWidth = Dimensions.get('window').width;
-
 
 type Message = {
   role: string;
@@ -30,6 +27,255 @@ type Message = {
 };
 
 const Chat = () => {
+const getStyles = (darkMode: boolean) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: darkMode ? '#121212' : '#FAFAFA',
+  },
+  messagesContainer: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  messageWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+    width: '100%',
+  },
+  botWrapper: {
+    justifyContent: 'flex-start',
+  },
+  userWrapper: {
+    justifyContent: 'flex-end',
+  },
+  messageContent: {
+    maxWidth: '80%',
+    paddingVertical: 5,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    overflow: 'hidden',
+    display: 'flex',
+  },
+  botContent: {
+    backgroundColor: 'transparent',
+    marginLeft: 8,
+  },
+  userContent: {
+    backgroundColor: darkMode ? '#333' : '#EAEAEA',
+    marginRight: 8,
+  },
+  botAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: darkMode ? '#1E1E1E' : '#E3F2FD',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    overflow: 'hidden',
+  },
+  botAvatarImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  userAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  floatingInputContainer: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 16,
+    paddingBottom: Platform.OS === 'ios' ? 0 : 8,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: darkMode ? '#1E1E1E' : '#FFF',
+    borderRadius: 25,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  input: {
+    flex: 1,
+    minHeight: 60,
+    maxHeight: 120,
+    backgroundColor: darkMode ? '#2A2A2A' : '#F5F5F5',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    fontSize: 16,
+    marginRight: 8,
+    color: darkMode ? '#FFF' : '#000',
+  },
+  sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollButton: {
+    position: 'absolute',
+    left: width / 2 - 20,
+    bottom: 140,
+    zIndex: 10,
+  },
+  scrollButtonInner: {
+    backgroundColor: darkMode ? '#1E1E1E' : 'white',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+});
+
+ const getMarkdownStyles = (darkMode: boolean) => StyleSheet.create({
+    body: {
+    color: darkMode ? '#E0E0E0' : '#333',
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  heading1: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: darkMode ? '#FFF' : '#000',
+    marginVertical: 8,
+  },
+  heading2: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: darkMode ? '#FFF' : '#000',
+    marginVertical: 6,
+  },
+  heading3: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: darkMode ? '#FFF' : '#000',
+    marginVertical: 4,
+  },
+  paragraph: {
+    fontSize: 16,
+    color: darkMode ? '#D3D3D3' : '#333',
+    lineHeight: 24,
+    marginVertical: 4,
+  },
+  strong: {
+    fontWeight: 'bold',
+  },
+  em: {
+    fontStyle: 'italic',
+  },
+  u: {
+    textDecorationLine: 'underline',
+  },
+  s: {
+    textDecorationLine: 'line-through',
+  },
+  code_inline: {
+    fontFamily: 'monospace',
+    fontSize: 14,
+    backgroundColor: darkMode ? '#333' : '#f5f5f5',
+    borderRadius: 3,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    lineHeight: 18,
+    color: darkMode ? '#EAEAEA' : '#000',
+  },
+  imageContainer: {
+    marginVertical: 12,
+    alignItems: 'center',
+  },
+  image: {
+    width: screenWidth * 0.9,
+    height: undefined,
+    aspectRatio: 1.6,
+    resizeMode: 'contain',
+  },
+  imageCaption: {
+    color: darkMode ? '#AAA' : '#888',
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  videoContainer: {
+    marginVertical: 12,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+  },
+  video: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    maxWidth: width * 0.8,
+  },
+  videoCaption: {
+    fontSize: 14,
+    color: darkMode ? '#AAA' : '#999',
+    marginTop: 4,
+    textAlign: 'center',
+    padding: 8,
+  },
+});
+
+ const getCodeBlockStyles = (darkMode: boolean) => StyleSheet.create({
+    container: {
+    borderRadius: 6,
+    marginVertical: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: darkMode ? '#555' : '#3c3c3c',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: darkMode ? '#1E1E1E' : '#2d2d2d',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: darkMode ? '#444' : '#3c3c3c',
+  },
+  language: {
+    color: darkMode ? '#BBB' : '#cccccc',
+    fontSize: 12,
+    fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+    textTransform: 'uppercase',
+  },
+  copyButton: {
+    padding: 6,
+  },
+});
+
+const { width } = Dimensions.get('window');
+const screenWidth = Dimensions.get('window').width;
+const { darkMode } = useTheme();
+const styles = getStyles(darkMode);
+const markdownStyles = getMarkdownStyles(darkMode);
+const codeBlockStyles = getCodeBlockStyles(darkMode);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -338,250 +584,5 @@ const Chat = () => {
   );
 }  
 
-const getStyles = (darkMode: boolean) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: darkMode ? '#121212' : '#FAFAFA',
-  },
-  messagesContainer: {
-    padding: 16,
-    paddingBottom: 100,
-  },
-  messageWrapper: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-    width: '100%',
-  },
-  botWrapper: {
-    justifyContent: 'flex-start',
-  },
-  userWrapper: {
-    justifyContent: 'flex-end',
-  },
-  messageContent: {
-    maxWidth: '80%',
-    paddingVertical: 5,
-    paddingHorizontal: 16,
-    borderRadius: 18,
-    overflow: 'hidden',
-    display: 'flex',
-  },
-  botContent: {
-    backgroundColor: 'transparent',
-    marginLeft: 8,
-  },
-  userContent: {
-    backgroundColor: darkMode ? '#333' : '#EAEAEA',
-    marginRight: 8,
-  },
-  botAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: darkMode ? '#1E1E1E' : '#E3F2FD',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-    overflow: 'hidden',
-  },
-  botAvatarImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  userAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  floatingInputContainer: {
-    position: 'absolute',
-    bottom: 16,
-    left: 16,
-    right: 16,
-    paddingBottom: Platform.OS === 'ios' ? 0 : 8,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: darkMode ? '#1E1E1E' : '#FFF',
-    borderRadius: 25,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  input: {
-    flex: 1,
-    minHeight: 60,
-    maxHeight: 120,
-    backgroundColor: darkMode ? '#2A2A2A' : '#F5F5F5',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    fontSize: 16,
-    marginRight: 8,
-    color: darkMode ? '#FFF' : '#000',
-  },
-  sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollButton: {
-    position: 'absolute',
-    left: width / 2 - 20,
-    bottom: 140,
-    zIndex: 10,
-  },
-  scrollButtonInner: {
-    backgroundColor: darkMode ? '#1E1E1E' : 'white',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-});
-
-export const getMarkdownStyles = (darkMode: boolean) => StyleSheet.create({
-    body: {
-    color: darkMode ? '#E0E0E0' : '#333',
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  heading1: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: darkMode ? '#FFF' : '#000',
-    marginVertical: 8,
-  },
-  heading2: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: darkMode ? '#FFF' : '#000',
-    marginVertical: 6,
-  },
-  heading3: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: darkMode ? '#FFF' : '#000',
-    marginVertical: 4,
-  },
-  paragraph: {
-    fontSize: 16,
-    color: darkMode ? '#D3D3D3' : '#333',
-    lineHeight: 24,
-    marginVertical: 4,
-  },
-  strong: {
-    fontWeight: 'bold',
-  },
-  em: {
-    fontStyle: 'italic',
-  },
-  u: {
-    textDecorationLine: 'underline',
-  },
-  s: {
-    textDecorationLine: 'line-through',
-  },
-  code_inline: {
-    fontFamily: 'monospace',
-    fontSize: 14,
-    backgroundColor: darkMode ? '#333' : '#f5f5f5',
-    borderRadius: 3,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    lineHeight: 18,
-    color: darkMode ? '#EAEAEA' : '#000',
-  },
-  imageContainer: {
-    marginVertical: 12,
-    alignItems: 'center',
-  },
-  image: {
-    width: screenWidth * 0.9,
-    height: undefined,
-    aspectRatio: 1.6,
-    resizeMode: 'contain',
-  },
-  imageCaption: {
-    color: darkMode ? '#AAA' : '#888',
-    fontSize: 12,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  videoContainer: {
-    marginVertical: 12,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#000',
-  },
-  video: {
-    width: '100%',
-    aspectRatio: 16 / 9,
-    maxWidth: width * 0.8,
-  },
-  videoCaption: {
-    fontSize: 14,
-    color: darkMode ? '#AAA' : '#999',
-    marginTop: 4,
-    textAlign: 'center',
-    padding: 8,
-  },
-});
-
-export const getCodeBlockStyles = (darkMode: boolean) => StyleSheet.create({
-    container: {
-    borderRadius: 6,
-    marginVertical: 12,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: darkMode ? '#555' : '#3c3c3c',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: darkMode ? '#1E1E1E' : '#2d2d2d',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: darkMode ? '#444' : '#3c3c3c',
-  },
-  language: {
-    color: darkMode ? '#BBB' : '#cccccc',
-    fontSize: 12,
-    fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-    textTransform: 'uppercase',
-  },
-  copyButton: {
-    padding: 6,
-  },
-});
-const { darkMode } = useTheme();
-const styles = getStyles(darkMode);
-const markdownStyles = getMarkdownStyles(darkMode);
-const codeBlockStyles = getCodeBlockStyles(darkMode);
 
 export default Chat;
