@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import {
   View,
@@ -12,8 +12,7 @@ import {
 import { NavigationContainer } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Index from './index';
-import { ThemeProvider } from '../theme/ThemeContext';
-
+import { ThemeProvider, useTheme } from '../theme/ThemeContext';
 
 const Drawer = createDrawerNavigator();
 
@@ -44,7 +43,6 @@ function TopBar({
 }) {
   return (
     <View style={[styles.topBar, { backgroundColor: darkMode ? '#111' : '#f5f5f5' }]}>
-      {/* Drawer Button */}
       <TouchableOpacity onPress={() => navigation.openDrawer()}>
         <Ionicons
           name="menu"
@@ -58,7 +56,6 @@ function TopBar({
         Hex
       </Text>
 
-      {/* Theme Toggle Button */}
       <TouchableOpacity onPress={onToggleTheme}>
         <Ionicons
           name={darkMode ? 'sunny' : 'moon'}
@@ -70,13 +67,8 @@ function TopBar({
   );
 }
 
-
-
 function ScreenWithTopBar({ navigation }: any) {
-  const systemColorScheme = useColorScheme();
-  const [darkMode, setDarkMode] = useState(systemColorScheme === 'dark');
-
-  const toggleTheme = () => setDarkMode((prev) => !prev);
+  const { darkMode, toggleTheme } = useTheme(); // ✅ now using ThemeContext
 
   return (
     <View style={{ flex: 1, backgroundColor: darkMode ? '#000' : '#fff' }}>
@@ -86,8 +78,6 @@ function ScreenWithTopBar({ navigation }: any) {
     </View>
   );
 }
-
-
 
 export default function RootLayout() {
   return (
@@ -104,7 +94,7 @@ export default function RootLayout() {
       >
         <Drawer.Screen name="Home" component={ScreenWithTopBar} />
       </Drawer.Navigator>
-      </ThemeProvider>
+    </ThemeProvider>
   );
 }
 
