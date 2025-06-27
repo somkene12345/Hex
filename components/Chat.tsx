@@ -19,8 +19,6 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import { CodeBlock, github } from "react-code-blocks";
 import YouTube from 'react-youtube';
 import { useTheme } from '../theme/ThemeContext'; // adjust path
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import uuid from 'react-native-uuid';
 
 
 type Message = {
@@ -28,8 +26,8 @@ type Message = {
   text: string;
 };
 
-const Chat = ({ chatId }: { chatId: string | null }) => {
-  const getStyles = (darkMode: boolean) => StyleSheet.create({
+const Chat = () => {
+const getStyles = (darkMode: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: darkMode ? '#121212' : '#FAFAFA',
@@ -427,45 +425,22 @@ const codeBlockStyles = getCodeBlockStyles(darkMode);
     );
   };
 
-const sendMessage = async () => {
-  if (!input.trim()) return;
+  const sendMessage = async () => {
+    if (!input.trim()) return;
 
-  const userMessage: Message = { role: "user", text: input };
-  const newMessages = [...messages, userMessage];
-  setMessages(newMessages);
-  setInput("");
+    const userMessage: Message = { role: "user", text: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
 
-  try {
-    const botResponse = await fetchGroqResponse(input);
-    const botMessage: Message = { role: "bot", text: botResponse };
-    const updatedMessages = [...newMessages, botMessage];
-    setMessages(updatedMessages);
-    await saveChatToHistory(updatedMessages);
-  } catch (error) {
-    const errorMessage: Message = { role: "bot", text: "Sorry, I encountered an error. Please try again." };
-    const errorMessages = [...newMessages, errorMessage];
-    setMessages(errorMessages);
-    await saveChatToHistory(errorMessages);
-  }
-};
-const saveChatToHistory = async (messages: Message[]) => {
-  const id = uuid.v4();
-  const historyItem = {
-    id,
-    title: messages.find((m) => m.role === 'user')?.text?.slice(0, 50) || 'New Chat',
-    timestamp: Date.now(),
-    messages,
+    try {
+      const botResponse = await fetchGroqResponse(input);
+      const botMessage: Message = { role: "bot", text: botResponse };
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      const errorMessage: Message = { role: "bot", text: "Sorry, I encountered an error. Please try again." };
+      setMessages((prev) => [...prev, errorMessage]);
+    }
   };
-
-  try {
-    const historyJSON = await AsyncStorage.getItem('chatHistory');
-    const history = historyJSON ? JSON.parse(historyJSON) : [];
-    history.unshift(historyItem); // Add newest chat at top
-    await AsyncStorage.setItem('chatHistory', JSON.stringify(history));
-  } catch (e) {
-    console.error('Failed to save chat history:', e);
-  }
-};
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {

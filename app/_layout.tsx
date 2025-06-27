@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import {
   View,
@@ -6,9 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
-  ScrollView,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import Index from './index';
 import { ThemeProvider, useTheme } from '../theme/ThemeContext';
@@ -19,23 +17,8 @@ function CustomDrawerContent({ navigation }: any) {
   const { darkMode } = useTheme();
   const styles = getDrawerStyles(darkMode);
 
-  const [history, setHistory] = useState([]);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const raw = await AsyncStorage.getItem('chatHistory');
-        if (raw) setHistory(JSON.parse(raw));
-      } catch (e) {
-        console.error('Failed to load history', e);
-      }
-    };
-    const unsubscribe = navigation.addListener('focus', load);
-    return unsubscribe;
-  }, [navigation]);
-
   return (
-    <ScrollView style={styles.drawerContainer}>
+    <View style={styles.drawerContainer}>
       <TouchableOpacity
         style={styles.newChatButton}
         onPress={() => {
@@ -45,24 +28,7 @@ function CustomDrawerContent({ navigation }: any) {
       >
         <Text style={styles.newChatText}>+ New Chat</Text>
       </TouchableOpacity>
-
-      <Text style={[styles.historyTitle, { color: darkMode ? '#ccc' : '#555' }]}>History</Text>
-
-      {history.map((item: any) => (
-        <TouchableOpacity
-          key={item.id}
-          style={styles.historyItem}
-          onPress={() => {
-            navigation.navigate('Home', { chatId: item.id });
-            navigation.closeDrawer();
-          }}
-        >
-          <Text style={{ color: darkMode ? '#fff' : '#000' }}>
-            {new Date(item.timestamp).toLocaleString()}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+    </View>
   );
 }
 
@@ -115,6 +81,7 @@ function ScreenWithTopBar({ navigation }: any) {
   );
 }
 
+// ✅ THIS FUNCTION NO LONGER USES useTheme OUTSIDE THE PROVIDER
 function InnerLayout() {
   const { darkMode } = useTheme();
 
@@ -134,6 +101,7 @@ function InnerLayout() {
   );
 }
 
+// ✅ WRAP THE WHOLE APP SAFELY HERE
 export default function RootLayout() {
   return (
     <ThemeProvider>
@@ -159,9 +127,9 @@ const getDrawerStyles = (darkMode: boolean) =>
     },
     drawerContainer: {
       flex: 1,
+      backgroundColor: darkMode ? '#111' : '#fff',
       paddingTop: 60,
       paddingHorizontal: 20,
-      backgroundColor: darkMode ? '#111' : '#fff',
     },
     newChatButton: {
       backgroundColor: darkMode ? '#333' : '#ddd',
@@ -173,16 +141,5 @@ const getDrawerStyles = (darkMode: boolean) =>
       color: darkMode ? '#fff' : '#000',
       fontSize: 16,
       textAlign: 'center',
-    },
-    historyTitle: {
-      fontSize: 14,
-      marginBottom: 8,
-    },
-    historyItem: {
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 6,
-      backgroundColor: darkMode ? '#222' : '#eee',
-      marginBottom: 8,
     },
   });
