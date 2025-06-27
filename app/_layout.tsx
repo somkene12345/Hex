@@ -5,11 +5,8 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  useColorScheme,
   StatusBar,
-  Platform,
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Index from './index';
 import { ThemeProvider, useTheme } from '../theme/ThemeContext';
@@ -25,7 +22,7 @@ function CustomDrawerContent({ navigation }: any) {
       <TouchableOpacity
         style={styles.newChatButton}
         onPress={() => {
-          navigation.navigate('Home');
+          navigation.navigate('Home', { reset: Date.now() });
           navigation.closeDrawer();
         }}
       >
@@ -84,23 +81,31 @@ function ScreenWithTopBar({ navigation }: any) {
   );
 }
 
-export default function RootLayout() {
+// ✅ THIS FUNCTION NO LONGER USES useTheme OUTSIDE THE PROVIDER
+function InnerLayout() {
   const { darkMode } = useTheme();
 
   return (
+    <Drawer.Navigator
+      screenOptions={{
+        headerShown: false,
+        drawerStyle: {
+          backgroundColor: darkMode ? '#111' : '#fff',
+          width: 240,
+        },
+      }}
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
+    >
+      <Drawer.Screen name="Home" component={ScreenWithTopBar} />
+    </Drawer.Navigator>
+  );
+}
+
+// ✅ WRAP THE WHOLE APP SAFELY HERE
+export default function RootLayout() {
+  return (
     <ThemeProvider>
-      <Drawer.Navigator
-        screenOptions={{
-          headerShown: false,
-          drawerStyle: {
-            backgroundColor: darkMode ? '#111' : '#fff',
-            width: 240,
-          },
-        }}
-        drawerContent={(props) => <CustomDrawerContent {...props} />}
-      >
-        <Drawer.Screen name="Home" component={ScreenWithTopBar} />
-      </Drawer.Navigator>
+      <InnerLayout />
     </ThemeProvider>
   );
 }
