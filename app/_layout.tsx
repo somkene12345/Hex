@@ -17,6 +17,9 @@ import { ThemeProvider, useTheme } from '../theme/ThemeContext';
 const Drawer = createDrawerNavigator();
 
 function CustomDrawerContent({ navigation }: any) {
+  const { darkMode } = useTheme();
+  const styles = getDrawerStyles(darkMode);
+
   return (
     <View style={styles.drawerContainer}>
       <TouchableOpacity
@@ -41,6 +44,8 @@ function TopBar({
   darkMode: boolean;
   navigation: any;
 }) {
+  const styles = getDrawerStyles(darkMode);
+
   return (
     <View style={[styles.topBar, { backgroundColor: darkMode ? '#111' : '#f5f5f5' }]}>
       <TouchableOpacity onPress={() => navigation.openDrawer()}>
@@ -68,7 +73,7 @@ function TopBar({
 }
 
 function ScreenWithTopBar({ navigation }: any) {
-  const { darkMode, toggleTheme } = useTheme(); // ✅ now using ThemeContext
+  const { darkMode, toggleTheme } = useTheme();
 
   return (
     <View style={{ flex: 1, backgroundColor: darkMode ? '#000' : '#fff' }}>
@@ -80,53 +85,56 @@ function ScreenWithTopBar({ navigation }: any) {
 }
 
 export default function RootLayout() {
+  const { darkMode } = useTheme();
+
   return (
     <ThemeProvider>
       <Drawer.Navigator
         screenOptions={{
           headerShown: false,
           drawerStyle: {
-            backgroundColor: '#111',
+            backgroundColor: darkMode ? '#111' : '#fff',
             width: 240,
           },
         }}
         drawerContent={(props) => <CustomDrawerContent {...props} />}
       >
         <Drawer.Screen name="Home" component={ScreenWithTopBar} />
-        </Drawer.Navigator>
+      </Drawer.Navigator>
     </ThemeProvider>
   );
 }
 
-const styles = StyleSheet.create({
-  topBar: {
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ccc',
-  },
-  topBarTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  drawerContainer: {
-    flex: 1,
-    backgroundColor: '#111',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-  },
-  newChatButton: {
-    backgroundColor: '#333',
-    padding: 12,
-    borderRadius: 6,
-    marginBottom: 12,
-  },
-  newChatText: {
-    color: '#fff',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-});
+const getDrawerStyles = (darkMode: boolean) =>
+  StyleSheet.create({
+    topBar: {
+      height: 56,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: '#ccc',
+    },
+    topBarTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+    },
+    drawerContainer: {
+      flex: 1,
+      backgroundColor: darkMode ? '#111' : '#fff',
+      paddingTop: 60,
+      paddingHorizontal: 20,
+    },
+    newChatButton: {
+      backgroundColor: darkMode ? '#333' : '#ddd',
+      padding: 12,
+      borderRadius: 6,
+      marginBottom: 12,
+    },
+    newChatText: {
+      color: darkMode ? '#fff' : '#000',
+      fontSize: 16,
+      textAlign: 'center',
+    },
+  });
