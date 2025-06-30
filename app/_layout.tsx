@@ -35,7 +35,7 @@ function CustomDrawerContent({ navigation }: any) {
       <TouchableOpacity
         style={styles.newChatButton}
         onPress={() => {
-          navigation.navigate('Home', { reset: Date.now() });
+          navigation.navigate('Home', { chatId: `${Date.now()}` });
           navigation.closeDrawer();
         }}
       >

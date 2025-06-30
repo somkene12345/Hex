@@ -26,7 +26,7 @@ type Message = {
   text: string;
 };
 
-const Chat = ({ chatId }: { chatId?: string }) => {
+const Chat = ({ chatId }: { chatId: string }) => {
   const getStyles = (darkMode: boolean) => StyleSheet.create({
   container: {
     flex: 1,
@@ -275,6 +275,8 @@ const { darkMode } = useTheme();
 const styles = getStyles(darkMode);
 const markdownStyles = getMarkdownStyles(darkMode);
 const codeBlockStyles = getCodeBlockStyles(darkMode);
+const fallbackId = useRef(`${Date.now()}`);
+const idToUse = chatId || fallbackId.current;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -286,15 +288,13 @@ const codeBlockStyles = getCodeBlockStyles(darkMode);
   const [inputHeight, setInputHeight] = useState(60);
 
   useEffect(() => {
-    const load = async () => {
-      if (chatId) {
-        const history = await loadChatHistory();
-        if (history[chatId]) {
-          setMessages(history[chatId].messages || []);
-        }
-      }
+    const loadMessages = async () => {
+      const history = await loadChatHistory();
+      const chat = history[chatId];
+      setMessages(chat?.messages || []);
     };
-    load();
+  
+    loadMessages();
   }, [chatId]);
   
 
@@ -437,31 +437,33 @@ const codeBlockStyles = getCodeBlockStyles(darkMode);
     );
   };
 
-  const sendMessage = async () => {
-    if (!input.trim()) return;
-  
-    const userMessage: Message = { role: "user", text: input };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
-    setInput("");
-  
-    try {
-      const botResponse = await fetchGroqResponse(input);
-      const botMessage: Message = { role: "bot", text: botResponse };
-      const updatedMessages = [...newMessages, botMessage];
-      setMessages(updatedMessages);
-  
-      const idToUse = chatId || Date.now().toString();
-      await saveChatToHistory(idToUse, updatedMessages);
-    } catch (error) {
-      const errorMessage: Message = { role: "bot", text: "Sorry, I encountered an error. Please try again." };
-      const updatedMessages = [...newMessages, errorMessage];
-      setMessages(updatedMessages);
-  
-      const idToUse = chatId || Date.now().toString();
-      await saveChatToHistory(idToUse, updatedMessages);
-    }
-  };
+const sendMessage = async () => {
+  if (!input.trim()) return;
+
+  const userMessage: Message = { role: "user", text: input };
+  const newMessages = [...messages, userMessage];
+  setMessages(newMessages);
+  setInput("");
+
+  try {
+    const botResponse = await fetchGroqResponse(input);
+    const botMessage: Message = { role: "bot", text: botResponse };
+    const updatedMessages = [...newMessages, botMessage];
+    setMessages(updatedMessages);
+
+    await saveChatToHistory(idToUse, updatedMessages);
+  } catch (error) {
+    const errorMessage: Message = {
+      role: "bot",
+      text: "Sorry, I encountered an error. Please try again.",
+    };
+    const updatedMessages = [...newMessages, errorMessage];
+    setMessages(updatedMessages);
+
+    await saveChatToHistory(idToUse, updatedMessages);
+  }
+};
+
   
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

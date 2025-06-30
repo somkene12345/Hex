@@ -4,8 +4,8 @@ import Chat from "../components/Chat";
 import { useTheme } from "../theme/ThemeContext";
 
 const Index = ({ route }: any) => {
-  const chatId = route?.params?.chatId ?? null;
   const { darkMode } = useTheme();
+  const chatId = route?.params?.chatId || 'default';
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: darkMode ? "#000" : "#fff" }}>
@@ -13,5 +13,6 @@ const Index = ({ route }: any) => {
     </SafeAreaView>
   );
 };
+
 
 export default Index;
