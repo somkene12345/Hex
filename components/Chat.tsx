@@ -277,8 +277,8 @@ const markdownStyles = getMarkdownStyles(darkMode);
 const codeBlockStyles = getCodeBlockStyles(darkMode);
 const idToUse = chatId || Date.now().toString();
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
+const [messages, setMessages] = useState<Message[]>([]);
+const [input, setInput] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef(null);  const flatListRef = useRef<FlatList>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -288,15 +288,11 @@ const idToUse = chatId || Date.now().toString();
 
   useEffect(() => {
     const loadMessages = async () => {
-      try {
-        const history = await loadChatHistory();
-        const chat = history[chatId as string];
-        setMessages(chat?.messages ?? []);
-      } catch (error) {
-        console.error('Failed to load chat history:', error);
-      }
+      const history = await loadChatHistory();
+      const chat = history?.[chatId ?? ''] ?? null;
+      setMessages(chat?.messages ?? []);
     };
-  
+
     loadMessages();
   }, [chatId]);
   

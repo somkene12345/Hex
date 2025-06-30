@@ -44,34 +44,47 @@ function CustomDrawerContent({ navigation }: any) {
 
   return (
     <View style={styles.drawerContainer}>
-      <TouchableOpacity style={styles.newChatButton} onPress={handleNewChat}>
-        <Text style={styles.newChatText}>+ New Chat</Text>
-      </TouchableOpacity>
+<TouchableOpacity
+  onPress={() => {
+    const newChatId = Date.now().toString();
+    navigation.navigate("Home", { chatId: newChatId });
+    navigation.closeDrawer();
+  }}
+>
+  <Text style={styles.newChatText}>+ New Chat</Text>
+</TouchableOpacity>
+
 
       <Text style={[styles.newChatText, { marginTop: 16, fontWeight: 'bold' }]}>
         History
       </Text>
-      {Object.entries(history)
-        .sort(([, a], [, b]) => b.timestamp - a.timestamp)
-        .map(([id, { timestamp }]) => (
-          <View key={id} style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity
-              style={[styles.newChatButton, { flex: 1, backgroundColor: darkMode ? '#222' : '#eee' }]}
-              onPress={() => {
-                navigation.navigate('Home', { chatId: id });
-                navigation.closeDrawer();
-              }}
-            >
-              <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }}>
-                {new Date(timestamp).toLocaleString()}
-              </Text>
-            </TouchableOpacity>
+      {Object.keys(history)
+  .sort((a, b) => history[b].timestamp - history[a].timestamp)
+  .map((chatId) => (
+    <View key={chatId} style={{ flexDirection: "row", alignItems: "center" }}>
+      <TouchableOpacity
+        style={[styles.newChatButton, { flex: 1 }]}
+        onPress={() => {
+          navigation.navigate("Home", { chatId });
+          navigation.closeDrawer();
+        }}
+      >
+        <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }}>
+          {new Date(history[chatId].timestamp).toLocaleString()}
+        </Text>
+      </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => handleDelete(id)} style={{ marginLeft: 8 }}>
-              <Ionicons name="trash" size={20} color={darkMode ? '#fff' : '#000'} />
-            </TouchableOpacity>
-          </View>
-        ))}
+      <TouchableOpacity
+        onPress={async () => {
+          await deleteChatFromHistory(chatId);
+          const updated = await loadChatHistory();
+          setHistory(updated);
+        }}
+      >
+        <Ionicons name="trash" size={18} color={darkMode ? "#fff" : "#000"} />
+      </TouchableOpacity>
+    </View>
+  ))}
     </View>
   );
 }
