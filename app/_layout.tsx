@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -19,14 +20,15 @@ function CustomDrawerContent({ navigation }: any) {
   const styles = getDrawerStyles(darkMode);
   const [history, setHistory] = useState<{ [key: string]: any }>({});
 
-  useEffect(() => {
-    const fetchHistory = async () => {
-      const loaded = await loadChatHistory();
-      setHistory(loaded);
-    };
-    const unsubscribe = navigation.addListener('focus', fetchHistory);
-    return unsubscribe;
-  }, [navigation]);
+  useFocusEffect(
+    React.useCallback(() => {
+      const load = async () => {
+        const history = await loadChatHistory();
+        setHistory(history);
+      };
+      load();
+    }, [])
+  );
 
   return (
     <View style={styles.drawerContainer}>
