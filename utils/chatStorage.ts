@@ -4,28 +4,35 @@ import { fetchGroqResponse } from '../services/groqService';
 const HISTORY_KEY = 'chatHistory';
 
 const generateShortTitle = async (messages: any[]) => {
-  const sample = messages.slice(0, 6).map((m: any) => `${m.role}: ${m.text}`).join('\n');
-  const prompt = `Summarize this chat in a maximum of 10 words. Use an objective tone and avoid referring to participants.\n${sample}`;
-  const title = await fetchGroqResponse(prompt);
-  return title?.split('\n')[0]?.trim().slice(0, 100) || 'Untitled Chat';
-};
-
-export const saveChatToHistory = async (chatId: string, messages: any[]) => {
-  const historyRaw = await AsyncStorage.getItem(HISTORY_KEY);
-  const history = historyRaw ? JSON.parse(historyRaw) : {};
-
-  const previous = history[chatId] || {};
-  const title = previous.title || await generateShortTitle(messages);
-
-  history[chatId] = {
-    ...previous,
-    messages,
-    timestamp: Date.now(),
-    title,
+    const sample = messages
+      .slice(0, 5) // ✅ Only the first 5 messages (user + bot)
+      .map((m: any) => `${m.role}: ${m.text}`)
+      .join('\n');
+  
+    const prompt = `Summarize this chat in a maximum of 10 words. Use an objective tone and avoid referring to the user or assistant.\n${sample}`;
+    const title = await fetchGroqResponse(prompt);
+    return title?.split('\n')[0]?.trim().slice(0, 100) || 'Untitled Chat';
   };
+  
 
-  await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-};
+  export const saveChatToHistory = async (chatId: string, messages: any[]) => {
+    const historyRaw = await AsyncStorage.getItem(HISTORY_KEY);
+    const history = historyRaw ? JSON.parse(historyRaw) : {};
+  
+    const previous = history[chatId] || {};
+    const alreadyHasTitle = !!previous.title;
+  
+    const title = alreadyHasTitle ? previous.title : await generateShortTitle(messages);
+  
+    history[chatId] = {
+      ...previous,
+      messages,
+      timestamp: Date.now(),
+      title,
+    };
+  
+    await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  };  
 
 export const loadChatHistory = async () => {
   const historyRaw = await AsyncStorage.getItem(HISTORY_KEY);
