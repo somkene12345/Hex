@@ -25,6 +25,8 @@ import {
   exportChatAsMarkdown,
   exportChatAsPDF,
 } from '../utils/chatStorage';
+import { fetchGroqResponse } from '../services/groqService';
+
 
 const Drawer = createDrawerNavigator();
 
@@ -72,21 +74,46 @@ function CustomDrawerContent({ navigation, route }: any) {
         const newTitle = prompt('New title', history[id].title) || history[id].title;
         await updateChatTitle(id, newTitle);
         break;
+  
+      case 'regenerate': {
+        const chat = history[id];
+        if (!chat) return;
+  
+        const sampleMessages = chat.messages.slice(0, 20); // Q/R pairs max 10
+        const sample = sampleMessages
+          .map((m: any) => `${m.role}: ${m.text}`)
+          .join('\n');
+  
+        const prompt = `Summarize this chat in a maximum of 10 words. Use an objective tone and do not refer to the user or assistant.\n${sample}`;
+        const newTitle = await fetchGroqResponse(prompt);
+  
+        if (newTitle) {
+          const title = newTitle.split('\n')[0].trim().slice(0, 100);
+          await updateChatTitle(id, title);
+        }
+        break;
+      }
+  
       case 'favorite':
         await toggleFavoriteChat(id);
         break;
+  
       case 'pin':
         await togglePinChat(id);
         break;
+  
       case 'export_json':
         await handleExport('json');
         break;
+  
       case 'export_md':
         await handleExport('markdown');
         break;
+  
       case 'export_pdf':
         await handleExport('pdf');
         break;
+  
       case 'delete':
         Alert.alert('Delete Chat?', 'This cannot be undone.', [
           { text: 'Cancel', style: 'cancel' },
@@ -94,9 +121,10 @@ function CustomDrawerContent({ navigation, route }: any) {
         ]);
         break;
     }
+  
     setHistory(await loadChatHistory());
     closeMenu();
-  };
+  };  
 
   return (
     <View style={styles.drawerContainer}>
@@ -143,21 +171,23 @@ function CustomDrawerContent({ navigation, route }: any) {
       <Modal transparent visible={menuVisible} animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} onPress={closeMenu} />
         <View style={[styles.modalContent, { backgroundColor: darkMode ? '#222' : '#fff' }]}>
-          {['rename','favorite','pin','export_json','export_md','export_pdf','delete'].map(action => (
-            <TouchableOpacity key={action} style={styles.menuOption} onPress={() => onMenuSelect(action)}>
-              <Text style={[styles.menuText, action === 'delete' && { color: 'red' }]}>
-                {{
-                  rename: 'Rename',
-                  favorite: 'Favorite / Unfavorite',
-                  pin: 'Pin / Unpin',
-                  export_json: 'Export JSON',
-                  export_md: 'Export Markdown',
-                  export_pdf: 'Export PDF',
-                  delete: 'Delete',
-                }[action]}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        {['rename', 'regenerate', 'favorite', 'pin', 'export_json', 'export_md', 'export_pdf', 'delete'].map(action => (
+  <TouchableOpacity key={action} style={styles.menuOption} onPress={() => onMenuSelect(action)}>
+    <Text style={[styles.menuText, action === 'delete' && { color: 'red' }]}>
+      {{
+        rename: 'Rename',
+        regenerate: 'Regenerate Title',
+        favorite: 'Favorite / Unfavorite',
+        pin: 'Pin / Unpin',
+        export_json: 'Export JSON',
+        export_md: 'Export Markdown',
+        export_pdf: 'Export PDF',
+        delete: 'Delete',
+      }[action]}
+    </Text>
+  </TouchableOpacity>
+))}
+
         </View>
       </Modal>
     </View>
