@@ -208,31 +208,14 @@ function CustomDrawerContent({ navigation, route }: any) {
   );
 }
 
-function TopBar({
-  onToggleTheme,
-  darkMode,
-  navigation,
-  title,
-}: {
-  onToggleTheme: () => void;
-  darkMode: boolean;
-  navigation: any;
-  title: string;
-}) {
+function TopBar({ onToggleTheme, darkMode, navigation }: any) {
   const styles = getDrawerStyles(darkMode);
-
   return (
     <View style={[styles.topBar, { backgroundColor: darkMode ? '#111' : '#f5f5f5' }]}>
       <TouchableOpacity onPress={() => navigation.openDrawer()}>
-        <Ionicons name="menu" size={24} color={darkMode ? '#fff' : '#000'} />
+        <Ionicons name="menu" size={24} color={darkMode ? '#fff' : '#000'} style={{ marginRight: 12 }} />
       </TouchableOpacity>
-
-      <View style={styles.titleWrapper}>
-        <Text style={[styles.topBarTitle, { color: darkMode ? '#fff' : '#000' }]}>
-          {title || 'Undefined Chat'}
-        </Text>
-      </View>
-
+      <Text style={[styles.topBarTitle, { color: darkMode ? '#fff' : '#000', flex: 1 }]}>Hex</Text>
       <TouchableOpacity onPress={onToggleTheme}>
         <Ionicons name={darkMode ? 'sunny' : 'moon'} size={24} color={darkMode ? '#FFD700' : '#333'} />
       </TouchableOpacity>
@@ -240,43 +223,16 @@ function TopBar({
   );
 }
 
-function ScreenWithTopBar({ navigation, route }: any) {
-  type ChatRecord = {
-    title?: string;
-    messages: any[];
-    timestamp: number;
-    pinned?: boolean;
-    favorite?: boolean;
-  };
+function ScreenWithTopBar({ navigation }: any) {
   const { darkMode, toggleTheme } = useTheme();
-  const [history, setHistory] = useState<Record<string, ChatRecord>>({});
-  const chatId = route?.params?.chatId;
-  const title = history?.[chatId]?.title || 'Undefined Chat';
-
-  useFocusEffect(
-    useCallback(() => {
-      const load = async () => {
-        const h = await loadChatHistory();
-        setHistory(h);
-      };
-      load();
-    }, [chatId])
-  );
-
   return (
     <View style={{ flex: 1, backgroundColor: darkMode ? '#000' : '#fff' }}>
       <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} />
-      <TopBar
-        onToggleTheme={toggleTheme}
-        darkMode={darkMode}
-        navigation={navigation}
-        title={title}
-      />
+      <TopBar onToggleTheme={toggleTheme} darkMode={darkMode} navigation={navigation} />
       <Index />
     </View>
   );
 }
-
 
 function InnerLayout() {
   const { darkMode } = useTheme();
@@ -314,20 +270,9 @@ const getDrawerStyles = (darkMode: boolean) =>
       paddingHorizontal: 16,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: '#ccc',
-      position: 'relative', // required for absolute title
     },
-    titleWrapper: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    topBarTitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
-    },
-      drawerContainer: {
+    topBarTitle: { fontSize: 20, fontWeight: 'bold' },
+    drawerContainer: {
       flex: 1,
       backgroundColor: darkMode ? '#111' : '#fff',
       paddingTop: 60,
