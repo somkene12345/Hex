@@ -275,8 +275,7 @@ const { darkMode } = useTheme();
 const styles = getStyles(darkMode);
 const markdownStyles = getMarkdownStyles(darkMode);
 const codeBlockStyles = getCodeBlockStyles(darkMode);
-const fallback = useRef(`${Date.now()}`);
-const idToUse = chatId || fallback.current;
+const idToUse = chatId || Date.now().toString();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -288,12 +287,19 @@ const idToUse = chatId || fallback.current;
   const [inputHeight, setInputHeight] = useState(60);
 
   useEffect(() => {
-    const load = async () => {
-      const h = await loadChatHistory();
-      setMessages(h[idToUse]?.messages || []);
+    const loadMessages = async () => {
+      try {
+        const history = await loadChatHistory();
+        const chat = history[chatId as string];
+        setMessages(chat?.messages ?? []);
+      } catch (error) {
+        console.error('Failed to load chat history:', error);
+      }
     };
-    load();
-  }, [idToUse]);
+  
+    loadMessages();
+  }, [chatId]);
+  
   
 
   useEffect(() => {

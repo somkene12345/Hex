@@ -18,59 +18,64 @@ const Drawer = createDrawerNavigator();
 function CustomDrawerContent({ navigation }: any) {
   const { darkMode } = useTheme();
   const styles = getDrawerStyles(darkMode);
-  const [history, setHistory] = useState<{ [key: string]: any }>({});
+  const [history, setHistory] = useState<{ [id: string]: any }>({});
 
+  // Reload history when drawer opens
   useFocusEffect(
     React.useCallback(() => {
-      const load = async () => {
-        const history = await loadChatHistory();
-        setHistory(history);
-      };
-      load();
+      (async () => {
+        const h = await loadChatHistory();
+        setHistory(h);
+      })();
     }, [])
   );
 
+  const handleNewChat = async () => {
+    const newId = Date.now().toString();
+    navigation.navigate('Home', { chatId: newId });
+    navigation.closeDrawer();
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteChatFromHistory(id);
+    const h = await loadChatHistory();
+    setHistory(h);
+  };
+
   return (
     <View style={styles.drawerContainer}>
-      <TouchableOpacity
-        style={styles.newChatButton}
-        onPress={() => {
-          navigation.navigate('Home', { chatId: `${Date.now()}` });
-          navigation.closeDrawer();
-        }}
-      >
+      <TouchableOpacity style={styles.newChatButton} onPress={handleNewChat}>
         <Text style={styles.newChatText}>+ New Chat</Text>
       </TouchableOpacity>
 
       <Text style={[styles.newChatText, { marginTop: 16, fontWeight: 'bold' }]}>
         History
       </Text>
-
-      {Object.keys(history)
-        .sort((a, b) => history[b].timestamp - history[a].timestamp)
-        .map((chatId) => (
-          <View key={chatId} style={{ marginTop: 8 }}>
+      {Object.entries(history)
+        .sort(([, a], [, b]) => b.timestamp - a.timestamp)
+        .map(([id, { timestamp }]) => (
+          <View key={id} style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity
-              style={[styles.newChatButton, { backgroundColor: darkMode ? '#222' : '#eee' }]}
+              style={[styles.newChatButton, { flex: 1, backgroundColor: darkMode ? '#222' : '#eee' }]}
               onPress={() => {
-                navigation.navigate('Home', { chatId });
+                navigation.navigate('Home', { chatId: id });
                 navigation.closeDrawer();
-              }}
-              onLongPress={async () => {
-                await deleteChatFromHistory(chatId);
-                const updated = await loadChatHistory();
-                setHistory(updated);
               }}
             >
               <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }}>
-                {new Date(history[chatId].timestamp).toLocaleString()}
+                {new Date(timestamp).toLocaleString()}
               </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => handleDelete(id)} style={{ marginLeft: 8 }}>
+              <Ionicons name="trash" size={20} color={darkMode ? '#fff' : '#000'} />
             </TouchableOpacity>
           </View>
         ))}
     </View>
   );
 }
+
 
 function TopBar({
   onToggleTheme,
