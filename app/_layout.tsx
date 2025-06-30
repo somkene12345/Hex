@@ -45,7 +45,7 @@ function CustomDrawerContent({ navigation }: any) {
   return (
     <View style={styles.drawerContainer}>
 <TouchableOpacity
-  style={[styles.newChatButton, { flex: 1 }]}
+  style={[styles.newChatButton]}
   onPress={() => {
     const newChatId = Date.now().toString();
     navigation.navigate("Home", { chatId: newChatId });
