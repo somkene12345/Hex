@@ -11,6 +11,7 @@ import {
   Alert,
   Modal,
   Share,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Index from './index';
@@ -143,24 +144,37 @@ function CustomDrawerContent({ navigation, route }: any) {
           const isActive = id === activeChatId;
           return (
             <View key={id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <TouchableOpacity
-                style={[
-                  styles.newChatButton,
-                  {
-                    flex: 1,
-                    backgroundColor: isActive ? (darkMode ? '#444' : '#ccc') : (darkMode ? '#222' : '#eee'),
-                    borderWidth: isActive ? 1 : 0,
-                    borderColor: isActive ? '#00f' : 'transparent',
-                  },
-                ]}
-                onPress={() => {
-                  navigation.navigate('Home', { chatId: id });
-                  navigation.closeDrawer();
-                }}>
-                <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }} numberOfLines={1}>
-                  {x.title} {x.favorite ? '⭐' : ''} {x.pinned ? '📌' : ''}
-                </Text>
-              </TouchableOpacity>
+<View
+  style={{ flex: 1 }}
+  {...(Platform.OS === 'web'
+    ? { title: x.title || 'Untitled Chat' }
+    : { accessibilityLabel: x.title || 'Untitled Chat' })}
+>
+  <TouchableOpacity
+    style={[
+      styles.newChatButton,
+      {
+        flex: 1,
+        backgroundColor: isActive ? (darkMode ? '#444' : '#ccc') : (darkMode ? '#222' : '#eee'),
+        borderWidth: isActive ? 1 : 0,
+        borderColor: isActive ? '#00f' : 'transparent',
+      },
+    ]}
+    onPress={() => {
+      navigation.navigate('Home', { chatId: id });
+      navigation.closeDrawer();
+    }}
+  >
+    <Text
+      style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }}
+      numberOfLines={1}
+    >
+      {(x.title || 'Untitled Chat') + (x.favorite ? ' ⭐' : '') + (x.pinned ? ' 📌' : '')}
+    </Text>
+  </TouchableOpacity>
+</View>
+
+
               <TouchableOpacity onPress={() => openMenu(id)}>
                 <Ionicons name="ellipsis-vertical" size={20} color={darkMode ? '#fff' : '#000'} />
               </TouchableOpacity>
@@ -194,14 +208,31 @@ function CustomDrawerContent({ navigation, route }: any) {
   );
 }
 
-function TopBar({ onToggleTheme, darkMode, navigation }: any) {
+function TopBar({
+  onToggleTheme,
+  darkMode,
+  navigation,
+  title,
+}: {
+  onToggleTheme: () => void;
+  darkMode: boolean;
+  navigation: any;
+  title: string;
+}) {
   const styles = getDrawerStyles(darkMode);
+
   return (
     <View style={[styles.topBar, { backgroundColor: darkMode ? '#111' : '#f5f5f5' }]}>
       <TouchableOpacity onPress={() => navigation.openDrawer()}>
-        <Ionicons name="menu" size={24} color={darkMode ? '#fff' : '#000'} style={{ marginRight: 12 }} />
+        <Ionicons name="menu" size={24} color={darkMode ? '#fff' : '#000'} />
       </TouchableOpacity>
-      <Text style={[styles.topBarTitle, { color: darkMode ? '#fff' : '#000', flex: 1 }]}>Hex</Text>
+
+      <View style={styles.titleWrapper}>
+        <Text style={[styles.topBarTitle, { color: darkMode ? '#fff' : '#000' }]}>
+          {title || 'Undefined Chat'}
+        </Text>
+      </View>
+
       <TouchableOpacity onPress={onToggleTheme}>
         <Ionicons name={darkMode ? 'sunny' : 'moon'} size={24} color={darkMode ? '#FFD700' : '#333'} />
       </TouchableOpacity>
@@ -209,16 +240,43 @@ function TopBar({ onToggleTheme, darkMode, navigation }: any) {
   );
 }
 
-function ScreenWithTopBar({ navigation }: any) {
+function ScreenWithTopBar({ navigation, route }: any) {
+  type ChatRecord = {
+    title?: string;
+    messages: any[];
+    timestamp: number;
+    pinned?: boolean;
+    favorite?: boolean;
+  };
   const { darkMode, toggleTheme } = useTheme();
+  const [history, setHistory] = useState<Record<string, ChatRecord>>({});
+  const chatId = route?.params?.chatId;
+  const title = history?.[chatId]?.title || 'Undefined Chat';
+
+  useFocusEffect(
+    useCallback(() => {
+      const load = async () => {
+        const h = await loadChatHistory();
+        setHistory(h);
+      };
+      load();
+    }, [chatId])
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: darkMode ? '#000' : '#fff' }}>
       <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} />
-      <TopBar onToggleTheme={toggleTheme} darkMode={darkMode} navigation={navigation} />
+      <TopBar
+        onToggleTheme={toggleTheme}
+        darkMode={darkMode}
+        navigation={navigation}
+        title={title}
+      />
       <Index />
     </View>
   );
 }
+
 
 function InnerLayout() {
   const { darkMode } = useTheme();
@@ -256,9 +314,20 @@ const getDrawerStyles = (darkMode: boolean) =>
       paddingHorizontal: 16,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: '#ccc',
+      position: 'relative', // required for absolute title
     },
-    topBarTitle: { fontSize: 20, fontWeight: 'bold' },
-    drawerContainer: {
+    titleWrapper: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    topBarTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+    },
+      drawerContainer: {
       flex: 1,
       backgroundColor: darkMode ? '#111' : '#fff',
       paddingTop: 60,
