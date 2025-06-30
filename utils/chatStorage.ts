@@ -5,7 +5,7 @@ const HISTORY_KEY = 'chatHistory';
 
 const generateShortTitle = async (messages: any[]) => {
   const sample = messages.slice(0, 6).map((m: any) => `${m.role}: ${m.text}`).join('\n');
-  const prompt = `Summarize this chat in a maximum of 10 words.\n${sample}`;
+  const prompt = `Summarize this chat in a maximum of 10 words. Use an objective tone and avoid referring to participants.\n${sample}`;
   const title = await fetchGroqResponse(prompt);
   return title?.split('\n')[0]?.trim().slice(0, 100) || 'Untitled Chat';
 };
