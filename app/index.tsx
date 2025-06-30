@@ -5,12 +5,12 @@ import { useTheme } from "../theme/ThemeContext";
 
 const Index = ({ route }: any) => {
   const { darkMode } = useTheme();
-  const chatId = route?.params?.chatId || 'default';
+  const { chatId } = route.params || {}; 
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: darkMode ? "#000" : "#fff" }}>
-      <Chat chatId={chatId} />
-    </SafeAreaView>
+<Chat chatId={chatId} />
+</SafeAreaView>
   );
 };
 

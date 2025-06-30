@@ -26,7 +26,7 @@ type Message = {
   text: string;
 };
 
-const Chat = ({ chatId }: { chatId: string }) => {
+const Chat = ({ chatId }: { chatId?: string }) => {
   const getStyles = (darkMode: boolean) => StyleSheet.create({
   container: {
     flex: 1,
@@ -275,8 +275,8 @@ const { darkMode } = useTheme();
 const styles = getStyles(darkMode);
 const markdownStyles = getMarkdownStyles(darkMode);
 const codeBlockStyles = getCodeBlockStyles(darkMode);
-const fallbackId = useRef(`${Date.now()}`);
-const idToUse = chatId || fallbackId.current;
+const fallback = useRef(`${Date.now()}`);
+const idToUse = chatId || fallback.current;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -288,14 +288,12 @@ const idToUse = chatId || fallbackId.current;
   const [inputHeight, setInputHeight] = useState(60);
 
   useEffect(() => {
-    const loadMessages = async () => {
-      const history = await loadChatHistory();
-      const chat = history[chatId];
-      setMessages(chat?.messages || []);
+    const load = async () => {
+      const h = await loadChatHistory();
+      setMessages(h[idToUse]?.messages || []);
     };
-  
-    loadMessages();
-  }, [chatId]);
+    load();
+  }, [idToUse]);
   
 
   useEffect(() => {
