@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import {
   View,
@@ -10,12 +10,23 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Index from './index';
 import { ThemeProvider, useTheme } from '../theme/ThemeContext';
+import { loadChatHistory, deleteChatFromHistory } from '../utils/chatStorage'; // 👈
 
 const Drawer = createDrawerNavigator();
 
 function CustomDrawerContent({ navigation }: any) {
   const { darkMode } = useTheme();
   const styles = getDrawerStyles(darkMode);
+  const [history, setHistory] = useState<{ [key: string]: any }>({});
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      const loaded = await loadChatHistory();
+      setHistory(loaded);
+    };
+    const unsubscribe = navigation.addListener('focus', fetchHistory);
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <View style={styles.drawerContainer}>
@@ -28,6 +39,33 @@ function CustomDrawerContent({ navigation }: any) {
       >
         <Text style={styles.newChatText}>+ New Chat</Text>
       </TouchableOpacity>
+
+      <Text style={[styles.newChatText, { marginTop: 16, fontWeight: 'bold' }]}>
+        History
+      </Text>
+
+      {Object.keys(history)
+        .sort((a, b) => history[b].timestamp - history[a].timestamp)
+        .map((chatId) => (
+          <View key={chatId} style={{ marginTop: 8 }}>
+            <TouchableOpacity
+              style={[styles.newChatButton, { backgroundColor: darkMode ? '#222' : '#eee' }]}
+              onPress={() => {
+                navigation.navigate('Home', { chatId });
+                navigation.closeDrawer();
+              }}
+              onLongPress={async () => {
+                await deleteChatFromHistory(chatId);
+                const updated = await loadChatHistory();
+                setHistory(updated);
+              }}
+            >
+              <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }}>
+                {new Date(history[chatId].timestamp).toLocaleString()}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ))}
     </View>
   );
 }

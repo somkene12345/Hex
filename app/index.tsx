@@ -3,12 +3,13 @@ import { SafeAreaView } from "react-native";
 import Chat from "../components/Chat";
 import { useTheme } from "../theme/ThemeContext";
 
-const Index = () => {
-  const { darkMode } = useTheme(); // ✅ now inside functional component
+const Index = ({ route }: any) => {
+  const chatId = route?.params?.chatId ?? null;
+  const { darkMode } = useTheme();
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: darkMode ? "#000" : "#fff" }}>
-      <Chat />
+      <Chat chatId={chatId} />
     </SafeAreaView>
   );
 };

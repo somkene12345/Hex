@@ -19,15 +19,15 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import { CodeBlock, github } from "react-code-blocks";
 import YouTube from 'react-youtube';
 import { useTheme } from '../theme/ThemeContext'; // adjust path
-
+import { saveChatToHistory, loadChatHistory } from '../utils/chatStorage';
 
 type Message = {
   role: string;
   text: string;
 };
 
-const Chat = () => {
-const getStyles = (darkMode: boolean) => StyleSheet.create({
+const Chat = ({ chatId }: { chatId?: string }) => {
+  const getStyles = (darkMode: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: darkMode ? '#121212' : '#FAFAFA',
@@ -285,6 +285,18 @@ const codeBlockStyles = getCodeBlockStyles(darkMode);
   const [shiftPressed, setShiftPressed] = useState(false);
   const [inputHeight, setInputHeight] = useState(60);
 
+  useEffect(() => {
+    const load = async () => {
+      if (chatId) {
+        const history = await loadChatHistory();
+        if (history[chatId]) {
+          setMessages(history[chatId].messages || []);
+        }
+      }
+    };
+    load();
+  }, [chatId]);
+  
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -427,20 +439,30 @@ const codeBlockStyles = getCodeBlockStyles(darkMode);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
-
+  
     const userMessage: Message = { role: "user", text: input };
-    setMessages((prev) => [...prev, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInput("");
-
+  
     try {
       const botResponse = await fetchGroqResponse(input);
       const botMessage: Message = { role: "bot", text: botResponse };
-      setMessages((prev) => [...prev, botMessage]);
+      const updatedMessages = [...newMessages, botMessage];
+      setMessages(updatedMessages);
+  
+      const idToUse = chatId || Date.now().toString();
+      await saveChatToHistory(idToUse, updatedMessages);
     } catch (error) {
       const errorMessage: Message = { role: "bot", text: "Sorry, I encountered an error. Please try again." };
-      setMessages((prev) => [...prev, errorMessage]);
+      const updatedMessages = [...newMessages, errorMessage];
+      setMessages(updatedMessages);
+  
+      const idToUse = chatId || Date.now().toString();
+      await saveChatToHistory(idToUse, updatedMessages);
     }
   };
+  
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
