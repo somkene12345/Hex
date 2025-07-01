@@ -39,11 +39,13 @@ export const loadChatHistory = async () => {
   return historyRaw ? JSON.parse(historyRaw) : {};
 };
 
-export const deleteChatFromHistory = async (chatId: string) => {
-  const history = await loadChatHistory();
-  delete history[chatId];
-  await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-};
+export const deleteChatFromHistory = async (chatId: string): Promise<Record<string, any>> => {
+    const history = await loadChatHistory();
+    delete history[chatId];
+    await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    return history;
+  };
+  
 
 export const clearChatHistory = async () => {
   await AsyncStorage.removeItem(HISTORY_KEY);

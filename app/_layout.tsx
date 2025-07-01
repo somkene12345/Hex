@@ -61,10 +61,7 @@ function CustomDrawerContent({ navigation, route }: any) {
     setMenuChatId(null);
   };
 
-  const handleExport = async (
-    format: 'json' | 'markdown' | 'pdf' | 'hexchat',
-    shareOnly = false
-  ) => {
+  const handleExport = async (format: 'json' | 'markdown' | 'pdf' | 'hexchat', shareOnly = false) => {
     const id = menuChatId!;
     let content = '';
     let extension = '';
@@ -78,94 +75,86 @@ function CustomDrawerContent({ navigation, route }: any) {
         mimeType = 'application/json';
         break;
       case 'markdown':
-        content = (await exportChatAsMarkdown(id)) ?? '';
+        content = await exportChatAsMarkdown(id);
         extension = 'md';
         mimeType = 'text/markdown';
         break;
       case 'pdf':
-        content = (await exportChatAsPDF(id)) ?? '';
+        content = await exportChatAsPDF(id);
         extension = 'pdf';
         mimeType = 'application/pdf';
         break;
     }
   
     const fileName = `chat_${Date.now()}.${extension}`;
+    const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+    await FileSystem.writeAsStringAsync(fileUri, content, { encoding: FileSystem.EncodingType.UTF8 });
   
-    if (Platform.OS === 'web') {
-      if (format === 'hexchat' || shareOnly) {
-        // Share by triggering browser download
-        const blob = new Blob([content], { type: mimeType });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else {
-        Alert.alert('Exported', `Downloaded: ${fileName}`);
-        const blob = new Blob([content], { type: mimeType });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-    } else {
-      // Native platforms (iOS/Android)
-      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
-      await FileSystem.writeAsStringAsync(fileUri, content, {
-        encoding: FileSystem.EncodingType.UTF8,
+    if (shareOnly && Platform.OS !== 'web') {
+      // 📤 Share via email, WhatsApp, Nearby, etc.
+      await Share.share({
+        url: fileUri,
+        message: `Here's a chat export from Hex`,
       });
-  
-      if (shareOnly || format === 'hexchat') {
-        await Share.share({ url: fileUri });
+    } else if (!shareOnly) {
+      if (Platform.OS === 'web') {
+        // 💾 Trigger browser download using blob
+        const blob = new Blob([content], { type: mimeType });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       } else {
         Alert.alert('Exported', `Saved to device: ${fileName}`);
       }
     }
   
     closeMenu();
-  };
-  
+  };  
   
   
 
   const handleImport = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: ['application/json', '*/*'],
-      copyToCacheDirectory: true,
-      multiple: false,
-    });
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/json', '*/*'],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
   
-    if (!result.canceled && result.assets?.length) {
-      const file = result.assets[0];
-      try {
-        const content = await FileSystem.readAsStringAsync(file.uri);
-        const imported = JSON.parse(content);
+      if (!result || !result.assets || !result.assets[0]) return;
   
-        if (!imported || typeof imported !== 'object' || !imported.messages) {
-          Alert.alert('Invalid File', 'The selected file is not a valid chat.');
-          return;
-        }
+      const { uri, name } = result.assets[0];
+      const content = await FileSystem.readAsStringAsync(uri);
+      const parsed = JSON.parse(content);
   
-        const newId = Date.now().toString();
-        const title = imported.title || `Imported Chat (${new Date().toLocaleDateString()})`;
-  
-        const historyRaw = await loadChatHistory();
-        historyRaw[newId] = {
-          ...imported,
-          title,
-          timestamp: Date.now(),
-        };
-  
-        await AsyncStorage.setItem('chatHistory', JSON.stringify(historyRaw));
-        setHistory(historyRaw);
-      } catch (e) {
-        Alert.alert('Error', 'Failed to load file as chat.');
+      if (!parsed || typeof parsed !== 'object' || !parsed.messages) {
+        Alert.alert('Invalid File', 'This file is not a valid chat export.');
+        return;
       }
+  
+      const newId = Date.now().toString();
+      const title = parsed.title || name || `Imported Chat`;
+  
+      const historyRaw = await loadChatHistory();
+      historyRaw[newId] = {
+        ...parsed,
+        title,
+        timestamp: Date.now(),
+      };
+  
+      await AsyncStorage.setItem('chatHistory', JSON.stringify(historyRaw));
+      setHistory(historyRaw);
+  
+      // ✅ Navigate to imported chat
+      navigation.navigate('Home', { chatId: newId });
+      navigation.closeDrawer();
+    } catch (e) {
+      Alert.alert('Import Failed', e.message || 'Unknown error while importing chat.');
     }
-  };
+  };  
   
 
   const onMenuSelect = async (action: string) => {
@@ -223,12 +212,29 @@ function CustomDrawerContent({ navigation, route }: any) {
           await handleExport('hexchat', true); // Share only
           break;
 
-      case 'delete':
-        Alert.alert('Delete Chat?', 'This cannot be undone.', [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Delete', style: 'destructive', onPress: async () => await deleteChatFromHistory(id) },
-        ]);
-        break;
+          case 'delete':
+            Alert.alert('Delete Chat?', 'This cannot be undone.', [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Delete',
+                style: 'destructive',
+                onPress: async () => {
+                  try {
+                    await deleteChatFromHistory(id);
+                    const updated = await loadChatHistory();
+                    setHistory(updated);
+                    // Optional: if deleted chat is active, go to a new one
+                    if (id === activeChatId) {
+                      navigation.navigate('Home', { chatId: Date.now().toString() });
+                    }
+                  } catch (e) {
+                    Alert.alert('Error', 'Failed to delete chat.');
+                  }
+                  closeMenu();
+                }
+              },
+            ]);
+            break;          
     }
 
     setHistory(await loadChatHistory());
@@ -274,8 +280,8 @@ function CustomDrawerContent({ navigation, route }: any) {
                   ]}
                   onPress={() => {
                     navigation.navigate('Home', { chatId: id });
-                    navigation.closeDrawer();
-                  }}
+                    setTimeout(() => navigation.closeDrawer(), 50); // ✅ Fix double tap bug
+                  }}                  
                 >
                   <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }} numberOfLines={1}>
                     {(x.title || 'Untitled Chat') + (x.favorite ? ' ⭐' : '') + (x.pinned ? ' 📌' : '')}
