@@ -1,4 +1,3 @@
-// _layout.tsx
 import React, { useState, useCallback } from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { useFocusEffect } from '@react-navigation/native';
@@ -11,7 +10,7 @@ import {
   Alert,
   Modal,
   Share,
-  Platform
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Index from './index';
@@ -27,6 +26,9 @@ import {
   exportChatAsPDF,
 } from '../utils/chatStorage';
 import { fetchGroqResponse } from '../services/groqService';
+import * as FileSystem from 'expo-file-system';
+import * as DocumentPicker from 'expo-document-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const Drawer = createDrawerNavigator();
@@ -48,25 +50,99 @@ function CustomDrawerContent({ navigation, route }: any) {
       load();
     }, [])
   );
-  
 
   const openMenu = (chatId: string) => {
     setMenuChatId(chatId);
     setMenuVisible(true);
   };
+
   const closeMenu = () => {
     setMenuVisible(false);
     setMenuChatId(null);
   };
-  const handleExport = async (format: 'json' | 'markdown' | 'pdf') => {
-    const id = menuChatId!;
-    let content;
-    if (format === 'json') content = await exportChatAsJSON(id);
-    else if (format === 'markdown') content = await exportChatAsMarkdown(id);
-    else content = await exportChatAsPDF(id);
-    Share.share({ message: content || '' });
+
+  const handleExport = async (
+    format: 'json' | 'markdown' | 'pdf' | 'hexchat',
+    shareOnly = false
+  ) => {
+    if (!menuChatId) return; // fix TS error
+    const id = menuChatId;
+  
+    let content = '';
+    let extension = '';
+    let mimeType = 'text/plain';
+  
+    switch (format) {
+      case 'json':
+      case 'hexchat':
+        content = (await exportChatAsJSON(id)) ?? '';
+        extension = format;
+        mimeType = 'application/json';
+        break;
+      case 'markdown':
+        content = await exportChatAsMarkdown(id);
+        extension = 'md';
+        mimeType = 'text/markdown';
+        break;
+      case 'pdf':
+        content = await exportChatAsPDF(id);
+        extension = 'pdf';
+        mimeType = 'application/pdf';
+        break;
+    }
+  
+    const fileName = `chat_${Date.now()}.${extension}`;
+    const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+    await FileSystem.writeAsStringAsync(fileUri, content, {
+      encoding: FileSystem.EncodingType.UTF8,
+    });
+  
+    if (shareOnly || format === 'hexchat') {
+      await Share.share({ url: fileUri });
+    } else {
+      Alert.alert('Exported', `Saved to device: ${fileName}`);
+    }
+  
     closeMenu();
   };
+  
+
+  const handleImport = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ['application/json', '*/*'],
+      copyToCacheDirectory: true,
+      multiple: false,
+    });
+  
+    if (!result.canceled && result.assets?.length) {
+      const file = result.assets[0];
+      try {
+        const content = await FileSystem.readAsStringAsync(file.uri);
+        const imported = JSON.parse(content);
+  
+        if (!imported || typeof imported !== 'object' || !imported.messages) {
+          Alert.alert('Invalid File', 'The selected file is not a valid chat.');
+          return;
+        }
+  
+        const newId = Date.now().toString();
+        const title = imported.title || `Imported Chat (${new Date().toLocaleDateString()})`;
+  
+        const historyRaw = await loadChatHistory();
+        historyRaw[newId] = {
+          ...imported,
+          title,
+          timestamp: Date.now(),
+        };
+  
+        await AsyncStorage.setItem('chatHistory', JSON.stringify(historyRaw));
+        setHistory(historyRaw);
+      } catch (e) {
+        Alert.alert('Error', 'Failed to load file as chat.');
+      }
+    }
+  };
+  
 
   const onMenuSelect = async (action: string) => {
     const id = menuChatId!;
@@ -75,46 +151,50 @@ function CustomDrawerContent({ navigation, route }: any) {
         const newTitle = prompt('New title', history[id].title) || history[id].title;
         await updateChatTitle(id, newTitle);
         break;
-  
+
       case 'regenerate': {
         const chat = history[id];
         if (!chat) return;
-  
-        const sampleMessages = chat.messages.slice(0, 20); // Q/R pairs max 10
+
+        const sampleMessages = chat.messages.slice(0, 20);
         const sample = sampleMessages
           .map((m: any) => `${m.role}: ${m.text}`)
           .join('\n');
-  
+
         const prompt = `Summarize this chat in a maximum of 10 words. Use an objective tone and do not refer to the user or assistant.\n${sample}`;
         const newTitle = await fetchGroqResponse(prompt);
-  
+
         if (newTitle) {
           const title = newTitle.split('\n')[0].trim().slice(0, 100);
           await updateChatTitle(id, title);
         }
         break;
       }
-  
+
       case 'favorite':
         await toggleFavoriteChat(id);
         break;
-  
+
       case 'pin':
         await togglePinChat(id);
         break;
-  
+
       case 'export_json':
         await handleExport('json');
         break;
-  
+
       case 'export_md':
         await handleExport('markdown');
         break;
-  
+
       case 'export_pdf':
         await handleExport('pdf');
         break;
-  
+
+      case 'share_hexchat':
+        await handleExport('hexchat', true);
+        break;
+
       case 'delete':
         Alert.alert('Delete Chat?', 'This cannot be undone.', [
           { text: 'Cancel', style: 'cancel' },
@@ -122,58 +202,58 @@ function CustomDrawerContent({ navigation, route }: any) {
         ]);
         break;
     }
-  
+
     setHistory(await loadChatHistory());
     closeMenu();
-  };  
+  };
 
   return (
     <View style={styles.drawerContainer}>
-      <TouchableOpacity style={styles.newChatButton} onPress={() => {
-        const newId = Date.now().toString();
-        navigation.navigate('Home', { chatId: newId });
-        navigation.closeDrawer();
-      }}>
+      <TouchableOpacity
+        style={styles.newChatButton}
+        onPress={() => {
+          const newId = Date.now().toString();
+          navigation.navigate('Home', { chatId: newId });
+          navigation.closeDrawer();
+        }}
+      >
         <Text style={styles.newChatText}>+ New Chat</Text>
       </TouchableOpacity>
 
       <Text style={[styles.newChatText, { marginTop: 16, fontWeight: 'bold' }]}>History</Text>
+
       {Object.entries(history)
         .sort(([, a], [, b]) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.timestamp - a.timestamp)
         .map(([id, x]) => {
           const isActive = id === activeChatId;
           return (
             <View key={id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-<View
-  style={{ flex: 1 }}
-  {...(Platform.OS === 'web'
-    ? { title: x.title || 'Untitled Chat' }
-    : { accessibilityLabel: x.title || 'Untitled Chat' })}
->
-  <TouchableOpacity
-    style={[
-      styles.newChatButton,
-      {
-        flex: 1,
-        backgroundColor: isActive ? (darkMode ? '#444' : '#ccc') : (darkMode ? '#222' : '#eee'),
-        borderWidth: isActive ? 1 : 0,
-        borderColor: isActive ? '#00f' : 'transparent',
-      },
-    ]}
-    onPress={() => {
-      navigation.navigate('Home', { chatId: id });
-      navigation.closeDrawer();
-    }}
-  >
-    <Text
-      style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }}
-      numberOfLines={1}
-    >
-      {(x.title || 'Untitled Chat') + (x.favorite ? ' ⭐' : '') + (x.pinned ? ' 📌' : '')}
-    </Text>
-  </TouchableOpacity>
-</View>
-
+              <View
+                style={{ flex: 1 }}
+                {...(Platform.OS === 'web'
+                  ? { title: x.title || 'Untitled Chat' }
+                  : { accessibilityLabel: x.title || 'Untitled Chat' })}
+              >
+                <TouchableOpacity
+                  style={[
+                    styles.newChatButton,
+                    {
+                      flex: 1,
+                      backgroundColor: isActive ? (darkMode ? '#444' : '#ccc') : (darkMode ? '#222' : '#eee'),
+                      borderWidth: isActive ? 1 : 0,
+                      borderColor: isActive ? '#00f' : 'transparent',
+                    },
+                  ]}
+                  onPress={() => {
+                    navigation.navigate('Home', { chatId: id });
+                    navigation.closeDrawer();
+                  }}
+                >
+                  <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }} numberOfLines={1}>
+                    {(x.title || 'Untitled Chat') + (x.favorite ? ' ⭐' : '') + (x.pinned ? ' 📌' : '')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
               <TouchableOpacity onPress={() => openMenu(id)}>
                 <Ionicons name="ellipsis-vertical" size={20} color={darkMode ? '#fff' : '#000'} />
@@ -182,26 +262,43 @@ function CustomDrawerContent({ navigation, route }: any) {
           );
         })}
 
+      <TouchableOpacity
+        style={[styles.newChatButton, { marginTop: 16, backgroundColor: darkMode ? '#333' : '#ddd' }]}
+        onPress={handleImport}
+      >
+        <Text style={[styles.newChatText, { color: darkMode ? '#fff' : '#000' }]}>📂 Import Chat</Text>
+      </TouchableOpacity>
+
       <Modal transparent visible={menuVisible} animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} onPress={closeMenu} />
         <View style={[styles.modalContent, { backgroundColor: darkMode ? '#222' : '#fff' }]}>
-        {['rename', 'regenerate', 'favorite', 'pin', 'export_json', 'export_md', 'export_pdf', 'delete'].map(action => (
-  <TouchableOpacity key={action} style={styles.menuOption} onPress={() => onMenuSelect(action)}>
-    <Text style={[styles.menuText, action === 'delete' && { color: 'red' }]}>
-      {{
-        rename: 'Rename',
-        regenerate: 'Regenerate Title',
-        favorite: 'Favorite / Unfavorite',
-        pin: 'Pin / Unpin',
-        export_json: 'Export JSON',
-        export_md: 'Export Markdown',
-        export_pdf: 'Export PDF',
-        delete: 'Delete',
-      }[action]}
-    </Text>
-  </TouchableOpacity>
-))}
-
+          {[
+            'rename',
+            'regenerate',
+            'favorite',
+            'pin',
+            'export_json',
+            'export_md',
+            'export_pdf',
+            'share_hexchat',
+            'delete',
+          ].map((action) => (
+            <TouchableOpacity key={action} style={styles.menuOption} onPress={() => onMenuSelect(action)}>
+              <Text style={[styles.menuText, action === 'delete' && { color: 'red' }]}>
+                {{
+                  rename: 'Rename',
+                  regenerate: 'Regenerate Title',
+                  favorite: 'Favorite / Unfavorite',
+                  pin: 'Pin / Unpin',
+                  export_json: 'Export JSON',
+                  export_md: 'Export Markdown',
+                  export_pdf: 'Export PDF',
+                  share_hexchat: 'Share (.hexchat)',
+                  delete: 'Delete',
+                }[action]}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </Modal>
     </View>
