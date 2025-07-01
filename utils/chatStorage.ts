@@ -15,24 +15,24 @@ const generateShortTitle = async (messages: any[]) => {
   };
   
 
-  export const saveChatToHistory = async (chatId: string, messages: any[]) => {
-    const historyRaw = await AsyncStorage.getItem(HISTORY_KEY);
-    const history = historyRaw ? JSON.parse(historyRaw) : {};
-  
-    const previous = history[chatId] || {};
-    const alreadyHasTitle = !!previous.title;
-  
-    const title = alreadyHasTitle ? previous.title : await generateShortTitle(messages);
-  
-    history[chatId] = {
-      ...previous,
-      messages,
-      timestamp: Date.now(),
-      title,
-    };
-  
-    await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  };  
+export const saveChatToHistory = async (chatId: string, messages: any[]) => {
+  const historyRaw = await AsyncStorage.getItem(HISTORY_KEY);
+  const history = historyRaw ? JSON.parse(historyRaw) : {};
+
+  const previous = history[chatId] || {};
+  const alreadyHasTitle = !!previous.title;
+
+  const title = alreadyHasTitle ? previous.title : await generateShortTitle(messages);
+
+  history[chatId] = {
+    ...previous,
+    messages,
+    timestamp: Date.now(),
+    title,
+  };
+
+  await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+};
 
 export const loadChatHistory = async () => {
   const historyRaw = await AsyncStorage.getItem(HISTORY_KEY);
@@ -91,4 +91,3 @@ export const exportChatAsMarkdown = async (chatId: string) => {
     // Simplest fallback: share Markdown as PDF later
     return exportChatAsMarkdown(chatId);
   };
-  

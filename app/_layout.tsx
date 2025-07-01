@@ -30,7 +30,6 @@ import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
 const Drawer = createDrawerNavigator();
 
 function CustomDrawerContent({ navigation, route }: any) {
@@ -66,7 +65,7 @@ function CustomDrawerContent({ navigation, route }: any) {
     let content = '';
     let extension = '';
     let mimeType = 'text/plain';
-  
+
     switch (format) {
       case 'json':
       case 'hexchat':
@@ -85,36 +84,31 @@ function CustomDrawerContent({ navigation, route }: any) {
         mimeType = 'application/pdf';
         break;
     }
-  
+
     const fileName = `chat_${Date.now()}.${extension}`;
-    const fileUri = `${FileSystem.documentDirectory}${fileName}`;
-    await FileSystem.writeAsStringAsync(fileUri, content, { encoding: FileSystem.EncodingType.UTF8 });
-  
-    if (shareOnly && Platform.OS !== 'web') {
-      // 📤 Share via email, WhatsApp, Nearby, etc.
-      await Share.share({
-        url: fileUri,
-        message: `Here's a chat export from Hex`,
-      });
-    } else if (!shareOnly) {
-      if (Platform.OS === 'web') {
-        // 💾 Trigger browser download using blob
-        const blob = new Blob([content], { type: mimeType });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    if (Platform.OS === 'web') {
+      const blob = new Blob([content], { type: mimeType });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+      await FileSystem.writeAsStringAsync(fileUri, content, { encoding: FileSystem.EncodingType.UTF8 });
+      if (shareOnly) {
+        await Share.share({
+          url: fileUri,
+          message: `Here's a chat export from Hex`,
+        });
       } else {
         Alert.alert('Exported', `Saved to device: ${fileName}`);
       }
     }
-  
+
     closeMenu();
-  };  
-  
-  
+  };
 
   const handleImport = async () => {
     try {
@@ -123,39 +117,43 @@ function CustomDrawerContent({ navigation, route }: any) {
         copyToCacheDirectory: true,
         multiple: false,
       });
-  
+
       if (!result || !result.assets || !result.assets[0]) return;
-  
+
       const { uri, name } = result.assets[0];
+      if (!uri) {
+        Alert.alert('Import Failed', 'Unable to access the selected file.');
+        return;
+      }
+
       const content = await FileSystem.readAsStringAsync(uri);
       const parsed = JSON.parse(content);
-  
+
       if (!parsed || typeof parsed !== 'object' || !parsed.messages) {
         Alert.alert('Invalid File', 'This file is not a valid chat export.');
         return;
       }
-  
+
       const newId = Date.now().toString();
       const title = parsed.title || name || `Imported Chat`;
-  
+
       const historyRaw = await loadChatHistory();
       historyRaw[newId] = {
         ...parsed,
         title,
         timestamp: Date.now(),
       };
-  
+
       await AsyncStorage.setItem('chatHistory', JSON.stringify(historyRaw));
       setHistory(historyRaw);
-  
-      // ✅ Navigate to imported chat
+
       navigation.navigate('Home', { chatId: newId });
       navigation.closeDrawer();
     } catch (e) {
-      Alert.alert('Import Failed', e.message || 'Unknown error while importing chat.');
+      const errorMessage = (e as Error).message || 'Unknown error while importing chat.';
+      Alert.alert('Import Failed', errorMessage);
     }
-  };  
-  
+  };
 
   const onMenuSelect = async (action: string) => {
     const id = menuChatId!;
@@ -204,37 +202,36 @@ function CustomDrawerContent({ navigation, route }: any) {
         await handleExport('pdf');
         break;
 
-        case 'export_hexchat':
-          await handleExport('hexchat'); // Export to device
-          break;
-    
-        case 'share_hexchat':
-          await handleExport('hexchat', true); // Share only
-          break;
+      case 'export_hexchat':
+        await handleExport('hexchat'); // Export to device
+        break;
 
-          case 'delete':
-            Alert.alert('Delete Chat?', 'This cannot be undone.', [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Delete',
-                style: 'destructive',
-                onPress: async () => {
-                  try {
-                    await deleteChatFromHistory(id);
-                    const updated = await loadChatHistory();
-                    setHistory(updated);
-                    // Optional: if deleted chat is active, go to a new one
-                    if (id === activeChatId) {
-                      navigation.navigate('Home', { chatId: Date.now().toString() });
-                    }
-                  } catch (e) {
-                    Alert.alert('Error', 'Failed to delete chat.');
-                  }
-                  closeMenu();
+      case 'share_hexchat':
+        await handleExport('hexchat', true); // Share only
+        break;
+
+      case 'delete':
+        Alert.alert('Delete Chat?', 'This cannot be undone.', [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deleteChatFromHistory(id);
+                const updated = await loadChatHistory();
+                setHistory(updated);
+                if (id === activeChatId) {
+                  navigation.navigate('Home', { chatId: Date.now().toString() });
                 }
-              },
-            ]);
-            break;          
+              } catch (e) {
+                Alert.alert('Error', 'Failed to delete chat.');
+              }
+              closeMenu();
+            },
+          },
+        ]);
+        break;
     }
 
     setHistory(await loadChatHistory());
@@ -281,7 +278,7 @@ function CustomDrawerContent({ navigation, route }: any) {
                   onPress={() => {
                     navigation.navigate('Home', { chatId: id });
                     setTimeout(() => navigation.closeDrawer(), 50); // ✅ Fix double tap bug
-                  }}                  
+                  }}
                 >
                   <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }} numberOfLines={1}>
                     {(x.title || 'Untitled Chat') + (x.favorite ? ' ⭐' : '') + (x.pinned ? ' 📌' : '')}
@@ -304,40 +301,39 @@ function CustomDrawerContent({ navigation, route }: any) {
       </TouchableOpacity>
 
       <Modal transparent visible={menuVisible} animationType="fade">
-  <TouchableOpacity style={styles.modalOverlay} onPress={closeMenu} />
-  <View style={[styles.modalContent, { backgroundColor: darkMode ? '#222' : '#fff' }]}>
-    {[
-      'rename',
-      'regenerate',
-      'favorite',
-      'pin',
-      'export_json',
-      'export_md',
-      'export_pdf',
-      'export_hexchat', // <-- New
-      'share_hexchat',  // <-- New
-      'delete',
-    ].map(action => (
-      <TouchableOpacity key={action} style={styles.menuOption} onPress={() => onMenuSelect(action)}>
-        <Text style={[styles.menuText, action === 'delete' && { color: 'red' }]}>
-          {{
-            rename: 'Rename',
-            regenerate: 'Regenerate Title',
-            favorite: 'Favorite / Unfavorite',
-            pin: 'Pin / Unpin',
-            export_json: 'Export JSON',
-            export_md: 'Export Markdown',
-            export_pdf: 'Export PDF',
-            export_hexchat: 'Export .hexchat File',
-            share_hexchat: 'Share .hexchat File',
-            delete: 'Delete',
-          }[action]}
-        </Text>
-      </TouchableOpacity>
-    ))}
-  </View>
-</Modal>
-
+        <TouchableOpacity style={styles.modalOverlay} onPress={closeMenu} />
+        <View style={[styles.modalContent, { backgroundColor: darkMode ? '#222' : '#fff' }]}>
+          {[
+            'rename',
+            'regenerate',
+            'favorite',
+            'pin',
+            'export_json',
+            'export_md',
+            'export_pdf',
+            'export_hexchat', // <-- New
+            'share_hexchat', // <-- New
+            'delete',
+          ].map((action) => (
+            <TouchableOpacity key={action} style={styles.menuOption} onPress={() => onMenuSelect(action)}>
+              <Text style={[styles.menuText, action === 'delete' && { color: 'red' }]}>
+                {{
+                  rename: 'Rename',
+                  regenerate: 'Regenerate Title',
+                  favorite: 'Favorite / Unfavorite',
+                  pin: 'Pin / Unpin',
+                  export_json: 'Export JSON',
+                  export_md: 'Export Markdown',
+                  export_pdf: 'Export PDF',
+                  export_hexchat: 'Export .hexchat File',
+                  share_hexchat: 'Share .hexchat File',
+                  delete: 'Delete',
+                }[action]}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Modal>
     </View>
   );
 }
