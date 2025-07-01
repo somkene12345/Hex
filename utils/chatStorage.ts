@@ -80,6 +80,11 @@ export const exportChatAsJSON = async (chatId: string): Promise<string | null> =
   if (!history[chatId]) return null;
   return JSON.stringify(history[chatId], null, 2);
 };
+
+export const exportChatAsHexChat = async (chatId: string): Promise<string | null> => {
+  return exportChatAsJSON(chatId); // Treat .hexchat as JSON for this app
+};
+
 export const exportChatAsMarkdown = async (chatId: string) => {
     const h = await loadChatHistory();
     const chat = h[chatId];

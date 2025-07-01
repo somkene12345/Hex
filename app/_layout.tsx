@@ -113,7 +113,7 @@ function CustomDrawerContent({ navigation, route }: any) {
   const handleImport = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/json', '*/*'],
+        type: ['application/json', 'application/octet-stream', '*/*'],
         copyToCacheDirectory: true,
         multiple: false,
       });
@@ -127,7 +127,13 @@ function CustomDrawerContent({ navigation, route }: any) {
       }
 
       const content = await FileSystem.readAsStringAsync(uri);
-      const parsed = JSON.parse(content);
+      let parsed;
+      try {
+        parsed = JSON.parse(content);
+      } catch {
+        Alert.alert('Invalid File', 'This file is not a valid JSON or .hexchat export.');
+        return;
+      }
 
       if (!parsed || typeof parsed !== 'object' || !parsed.messages) {
         Alert.alert('Invalid File', 'This file is not a valid chat export.');
@@ -238,14 +244,18 @@ function CustomDrawerContent({ navigation, route }: any) {
     closeMenu();
   };
 
+  const openChat = (id: string) => {
+    navigation.navigate('Home', { chatId: id });
+    navigation.closeDrawer();
+  };
+
   return (
     <View style={styles.drawerContainer}>
       <TouchableOpacity
         style={styles.newChatButton}
         onPress={() => {
           const newId = Date.now().toString();
-          navigation.navigate('Home', { chatId: newId });
-          navigation.closeDrawer();
+          openChat(newId);
         }}
       >
         <Text style={styles.newChatText}>+ New Chat</Text>
@@ -259,12 +269,7 @@ function CustomDrawerContent({ navigation, route }: any) {
           const isActive = id === activeChatId;
           return (
             <View key={id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <View
-                style={{ flex: 1 }}
-                {...(Platform.OS === 'web'
-                  ? { title: x.title || 'Untitled Chat' }
-                  : { accessibilityLabel: x.title || 'Untitled Chat' })}
-              >
+              <View style={{ flex: 1 }}>
                 <TouchableOpacity
                   style={[
                     styles.newChatButton,
@@ -275,10 +280,7 @@ function CustomDrawerContent({ navigation, route }: any) {
                       borderColor: isActive ? '#00f' : 'transparent',
                     },
                   ]}
-                  onPress={() => {
-                    navigation.navigate('Home', { chatId: id });
-                    setTimeout(() => navigation.closeDrawer(), 50); // ✅ Fix double tap bug
-                  }}
+                  onPress={() => openChat(id)}
                 >
                   <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }} numberOfLines={1}>
                     {(x.title || 'Untitled Chat') + (x.favorite ? ' ⭐' : '') + (x.pinned ? ' 📌' : '')}
