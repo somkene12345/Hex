@@ -117,48 +117,47 @@ function CustomDrawerContent({ navigation, route }: any) {
         copyToCacheDirectory: true,
         multiple: false,
       });
-
+  
       if (!result || !result.assets || !result.assets[0]) return;
-
+  
       const { uri, name } = result.assets[0];
       if (!uri) {
         Alert.alert('Import Failed', 'Unable to access the selected file.');
         return;
       }
-
+  
       const content = await FileSystem.readAsStringAsync(uri);
       let parsed;
       try {
         parsed = JSON.parse(content);
       } catch {
-        Alert.alert('Invalid File', 'This file is not a valid JSON or .hexchat export.');
+        Alert.alert('Invalid File', 'This file is not a valid JSON or .hexchat chat.');
         return;
       }
-
-      if (!parsed || typeof parsed !== 'object' || !parsed.messages) {
+  
+      if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.messages)) {
         Alert.alert('Invalid File', 'This file is not a valid chat export.');
         return;
       }
-
+  
       const newId = Date.now().toString();
       const title = parsed.title || name || `Imported Chat`;
-
+  
       const historyRaw = await loadChatHistory();
       historyRaw[newId] = {
         ...parsed,
         title,
         timestamp: Date.now(),
       };
-
+  
       await AsyncStorage.setItem('chatHistory', JSON.stringify(historyRaw));
       setHistory(historyRaw);
-
-      navigation.navigate('Home', { chatId: newId });
+      navigation.navigate('Home', { chatId: newId }); // ✅ Open immediately
     } catch (e) {
       const errorMessage = (e as Error).message || 'Unknown error while importing chat.';
       Alert.alert('Import Failed', errorMessage);
     }
-  };
+  };  
 
   const onMenuSelect = async (action: string) => {
     const id = menuChatId!;
@@ -215,28 +214,28 @@ function CustomDrawerContent({ navigation, route }: any) {
         await handleExport('hexchat', true); // Share only
         break;
 
-      case 'delete':
-        Alert.alert('Delete Chat?', 'This cannot be undone.', [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                await deleteChatFromHistory(id);
-                const updated = await loadChatHistory();
-                setHistory(updated);
-                if (id === activeChatId) {
-                  navigation.navigate('Home', { chatId: Date.now().toString() });
+        case 'delete':
+          Alert.alert('Delete Chat?', 'This cannot be undone.', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Delete',
+              style: 'destructive',
+              onPress: async () => {
+                try {
+                  const updated = await deleteChatFromHistory(id);
+                  setHistory(updated);
+                  if (id === activeChatId) {
+                    const newId = Date.now().toString();
+                    navigation.navigate('Home', { chatId: newId }); // go to a new blank chat
+                  }
+                } catch (e) {
+                  Alert.alert('Error', 'Failed to delete chat.');
                 }
-              } catch (e) {
-                Alert.alert('Error', 'Failed to delete chat.');
-              }
-              closeMenu();
+                closeMenu();
+              },
             },
-          },
-        ]);
-        break;
+          ]);
+          break;        
     }
 
     setHistory(await loadChatHistory());
@@ -244,8 +243,11 @@ function CustomDrawerContent({ navigation, route }: any) {
   };
 
   const openChat = (id: string) => {
-    navigation.navigate('Home', { chatId: id });
+    if (id !== activeChatId) {
+      navigation.navigate('Home', { chatId: id });
+    }
   };
+  
 
   return (
     <View style={styles.drawerContainer}>
