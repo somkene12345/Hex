@@ -154,7 +154,6 @@ function CustomDrawerContent({ navigation, route }: any) {
       setHistory(historyRaw);
 
       navigation.navigate('Home', { chatId: newId });
-      navigation.closeDrawer();
     } catch (e) {
       const errorMessage = (e as Error).message || 'Unknown error while importing chat.';
       Alert.alert('Import Failed', errorMessage);
@@ -246,7 +245,6 @@ function CustomDrawerContent({ navigation, route }: any) {
 
   const openChat = (id: string) => {
     navigation.navigate('Home', { chatId: id });
-    navigation.closeDrawer();
   };
 
   return (
