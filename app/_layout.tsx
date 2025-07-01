@@ -65,9 +65,7 @@ function CustomDrawerContent({ navigation, route }: any) {
     format: 'json' | 'markdown' | 'pdf' | 'hexchat',
     shareOnly = false
   ) => {
-    if (!menuChatId) return; // fix TS error
-    const id = menuChatId;
-  
+    const id = menuChatId!;
     let content = '';
     let extension = '';
     let mimeType = 'text/plain';
@@ -80,31 +78,57 @@ function CustomDrawerContent({ navigation, route }: any) {
         mimeType = 'application/json';
         break;
       case 'markdown':
-        content = await exportChatAsMarkdown(id);
+        content = (await exportChatAsMarkdown(id)) ?? '';
         extension = 'md';
         mimeType = 'text/markdown';
         break;
       case 'pdf':
-        content = await exportChatAsPDF(id);
+        content = (await exportChatAsPDF(id)) ?? '';
         extension = 'pdf';
         mimeType = 'application/pdf';
         break;
     }
   
     const fileName = `chat_${Date.now()}.${extension}`;
-    const fileUri = `${FileSystem.documentDirectory}${fileName}`;
-    await FileSystem.writeAsStringAsync(fileUri, content, {
-      encoding: FileSystem.EncodingType.UTF8,
-    });
   
-    if (shareOnly || format === 'hexchat') {
-      await Share.share({ url: fileUri });
+    if (Platform.OS === 'web') {
+      if (format === 'hexchat' || shareOnly) {
+        // Share by triggering browser download
+        const blob = new Blob([content], { type: mimeType });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        Alert.alert('Exported', `Downloaded: ${fileName}`);
+        const blob = new Blob([content], { type: mimeType });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     } else {
-      Alert.alert('Exported', `Saved to device: ${fileName}`);
+      // Native platforms (iOS/Android)
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+      await FileSystem.writeAsStringAsync(fileUri, content, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+  
+      if (shareOnly || format === 'hexchat') {
+        await Share.share({ url: fileUri });
+      } else {
+        Alert.alert('Exported', `Saved to device: ${fileName}`);
+      }
     }
   
     closeMenu();
   };
+  
+  
   
 
   const handleImport = async () => {
@@ -191,9 +215,13 @@ function CustomDrawerContent({ navigation, route }: any) {
         await handleExport('pdf');
         break;
 
-      case 'share_hexchat':
-        await handleExport('hexchat', true);
-        break;
+        case 'export_hexchat':
+          await handleExport('hexchat'); // Export to device
+          break;
+    
+        case 'share_hexchat':
+          await handleExport('hexchat', true); // Share only
+          break;
 
       case 'delete':
         Alert.alert('Delete Chat?', 'This cannot be undone.', [
@@ -270,37 +298,40 @@ function CustomDrawerContent({ navigation, route }: any) {
       </TouchableOpacity>
 
       <Modal transparent visible={menuVisible} animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} onPress={closeMenu} />
-        <View style={[styles.modalContent, { backgroundColor: darkMode ? '#222' : '#fff' }]}>
-          {[
-            'rename',
-            'regenerate',
-            'favorite',
-            'pin',
-            'export_json',
-            'export_md',
-            'export_pdf',
-            'share_hexchat',
-            'delete',
-          ].map((action) => (
-            <TouchableOpacity key={action} style={styles.menuOption} onPress={() => onMenuSelect(action)}>
-              <Text style={[styles.menuText, action === 'delete' && { color: 'red' }]}>
-                {{
-                  rename: 'Rename',
-                  regenerate: 'Regenerate Title',
-                  favorite: 'Favorite / Unfavorite',
-                  pin: 'Pin / Unpin',
-                  export_json: 'Export JSON',
-                  export_md: 'Export Markdown',
-                  export_pdf: 'Export PDF',
-                  share_hexchat: 'Share (.hexchat)',
-                  delete: 'Delete',
-                }[action]}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </Modal>
+  <TouchableOpacity style={styles.modalOverlay} onPress={closeMenu} />
+  <View style={[styles.modalContent, { backgroundColor: darkMode ? '#222' : '#fff' }]}>
+    {[
+      'rename',
+      'regenerate',
+      'favorite',
+      'pin',
+      'export_json',
+      'export_md',
+      'export_pdf',
+      'export_hexchat', // <-- New
+      'share_hexchat',  // <-- New
+      'delete',
+    ].map(action => (
+      <TouchableOpacity key={action} style={styles.menuOption} onPress={() => onMenuSelect(action)}>
+        <Text style={[styles.menuText, action === 'delete' && { color: 'red' }]}>
+          {{
+            rename: 'Rename',
+            regenerate: 'Regenerate Title',
+            favorite: 'Favorite / Unfavorite',
+            pin: 'Pin / Unpin',
+            export_json: 'Export JSON',
+            export_md: 'Export Markdown',
+            export_pdf: 'Export PDF',
+            export_hexchat: 'Export .hexchat File',
+            share_hexchat: 'Share .hexchat File',
+            delete: 'Delete',
+          }[action]}
+        </Text>
+      </TouchableOpacity>
+    ))}
+  </View>
+</Modal>
+
     </View>
   );
 }
