@@ -123,38 +123,22 @@ function CustomDrawerContent({ navigation, route }: any) {
         const file = result.assets[0];
         const { uri, name } = file;
       
-        if (!uri) {
-          Alert.alert('Import Failed', 'Unable to access the selected file.');
-          return;
-        }
-      
         const content = await FileSystem.readAsStringAsync(uri);
         let parsed;
-        try {
-          parsed = JSON.parse(content);
-        } catch {
-          Alert.alert('Invalid File', 'This file is not a valid JSON or .hexchat export.');
+        try { parsed = JSON.parse(content); }
+        catch {
+          Alert.alert('Invalid', 'Not valid JSON/.hexchat');
           return;
         }
       
-        if (!parsed || typeof parsed !== 'object' || !parsed.messages) {
-          Alert.alert('Invalid File', 'This file is not a valid chat export.');
-          return;
-        }
+        if (!parsed.messages) { /* invalid */ return; }
       
         const newId = Date.now().toString();
-        const title = parsed.title || name || `Imported Chat`;
-      
-        const historyRaw = await loadChatHistory();
-        historyRaw[newId] = {
-          ...parsed,
-          title,
-          timestamp: Date.now(),
-        };
-      
-        await AsyncStorage.setItem('chatHistory', JSON.stringify(historyRaw));
-        setHistory(historyRaw);
-      
+        const title = parsed.title || name || 'Imported Chat';
+        const histRaw = await loadChatHistory();
+        histRaw[newId] = { ...parsed, title, timestamp: Date.now() };
+        await AsyncStorage.setItem('chatHistory', JSON.stringify(histRaw));
+        setHistory(histRaw);
         navigation.navigate('Home', { chatId: newId });
       }      
     } catch (e) {
@@ -222,23 +206,16 @@ function CustomDrawerContent({ navigation, route }: any) {
           Alert.alert('Delete Chat?', 'This cannot be undone.', [
             { text: 'Cancel', style: 'cancel' },
             {
-              text: 'Delete',
-              style: 'destructive',
+              text: 'Delete', style: 'destructive',
               onPress: async () => {
-                try {
-                  onPress: async () => {
-                    const updated = await deleteChatFromHistory(id);
-                    setHistory(updated);
-                    if (id === activeChatId) navigation.navigate('Home', { chatId: Date.now().toString() });
-                  }
-                } catch (e) {
-                  Alert.alert('Error', 'Failed to delete chat.');
-                }
+                const updated = await deleteChatFromHistory(id);
+                setHistory(updated);
+                if (id === activeChatId) openChat(Date.now().toString());
                 closeMenu();
-              },
-            },
+              }
+            }
           ]);
-          break;        
+          break;           
     }
 
     setHistory(await loadChatHistory());
