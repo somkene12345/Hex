@@ -11,6 +11,7 @@ import {
   Modal,
   Share,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Index from './index';
@@ -117,46 +118,49 @@ function CustomDrawerContent({ navigation, route }: any) {
         copyToCacheDirectory: true,
         multiple: false,
       });
-  
-      if (!result || !result.assets || !result.assets[0]) return;
-  
-      const { uri, name } = result.assets[0];
-      if (!uri) {
-        Alert.alert('Import Failed', 'Unable to access the selected file.');
-        return;
-      }
-  
-      const content = await FileSystem.readAsStringAsync(uri);
-      let parsed;
-      try {
-        parsed = JSON.parse(content);
-      } catch {
-        Alert.alert('Invalid File', 'This file is not a valid JSON or .hexchat chat.');
-        return;
-      }
-  
-      if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.messages)) {
-        Alert.alert('Invalid File', 'This file is not a valid chat export.');
-        return;
-      }
-  
-      const newId = Date.now().toString();
-      const title = parsed.title || name || `Imported Chat`;
-  
-      const historyRaw = await loadChatHistory();
-      historyRaw[newId] = {
-        ...parsed,
-        title,
-        timestamp: Date.now(),
-      };
-  
-      await AsyncStorage.setItem('chatHistory', JSON.stringify(historyRaw));
-      setHistory(historyRaw);
-      navigation.navigate('Home', { chatId: newId }); // ✅ Open immediately
+      
+      if (result.assets && result.assets.length > 0) {
+        const file = result.assets[0];
+        const { uri, name } = file;
+      
+        if (!uri) {
+          Alert.alert('Import Failed', 'Unable to access the selected file.');
+          return;
+        }
+      
+        const content = await FileSystem.readAsStringAsync(uri);
+        let parsed;
+        try {
+          parsed = JSON.parse(content);
+        } catch {
+          Alert.alert('Invalid File', 'This file is not a valid JSON or .hexchat export.');
+          return;
+        }
+      
+        if (!parsed || typeof parsed !== 'object' || !parsed.messages) {
+          Alert.alert('Invalid File', 'This file is not a valid chat export.');
+          return;
+        }
+      
+        const newId = Date.now().toString();
+        const title = parsed.title || name || `Imported Chat`;
+      
+        const historyRaw = await loadChatHistory();
+        historyRaw[newId] = {
+          ...parsed,
+          title,
+          timestamp: Date.now(),
+        };
+      
+        await AsyncStorage.setItem('chatHistory', JSON.stringify(historyRaw));
+        setHistory(historyRaw);
+      
+        navigation.navigate('Home', { chatId: newId });
+      }      
     } catch (e) {
       const errorMessage = (e as Error).message || 'Unknown error while importing chat.';
       Alert.alert('Import Failed', errorMessage);
-    }
+    }    
   };  
 
   const onMenuSelect = async (action: string) => {
@@ -222,11 +226,10 @@ function CustomDrawerContent({ navigation, route }: any) {
               style: 'destructive',
               onPress: async () => {
                 try {
-                  const updated = await deleteChatFromHistory(id);
-                  setHistory(updated);
-                  if (id === activeChatId) {
-                    const newId = Date.now().toString();
-                    navigation.navigate('Home', { chatId: newId }); // go to a new blank chat
+                  onPress: async () => {
+                    const updated = await deleteChatFromHistory(id);
+                    setHistory(updated);
+                    if (id === activeChatId) navigation.navigate('Home', { chatId: Date.now().toString() });
                   }
                 } catch (e) {
                   Alert.alert('Error', 'Failed to delete chat.');
@@ -262,7 +265,7 @@ function CustomDrawerContent({ navigation, route }: any) {
       </TouchableOpacity>
 
       <Text style={[styles.newChatText, { marginTop: 16, fontWeight: 'bold' }]}>History</Text>
-
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: 10 }}>
       {Object.entries(history)
         .sort(([, a], [, b]) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.timestamp - a.timestamp)
         .map(([id, x]) => {
@@ -294,7 +297,7 @@ function CustomDrawerContent({ navigation, route }: any) {
             </View>
           );
         })}
-
+  </ScrollView>
       <TouchableOpacity
         style={[styles.newChatButton, { marginTop: 16, backgroundColor: darkMode ? '#333' : '#ddd' }]}
         onPress={handleImport}
