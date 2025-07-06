@@ -39,12 +39,29 @@ export const loadChatHistory = async (): Promise<Record<string, any>> => {
     return raw ? JSON.parse(raw) : {};
   };
   
-  export const deleteChatFromHistory = async (id: string): Promise<Record<string, any>> => {
-    const hist = await loadChatHistory();
-    delete hist[id];
-    await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
-    return hist;
-  };
+export async function deleteChatFromHistory(id: string) {
+  try {
+    const raw = await AsyncStorage.getItem('chatHistory');
+    if (!raw) return {};
+
+    const history = JSON.parse(raw);
+    console.log('🧾 Loaded history for deletion:', history);
+
+    if (history[id]) {
+      delete history[id];
+      console.log(`✅ Deleted chat ${id}`);
+    } else {
+      console.warn(`⚠️ Chat ${id} not found`);
+    }
+
+    await AsyncStorage.setItem('chatHistory', JSON.stringify(history));
+    return history;
+  } catch (e) {
+    console.error('❌ Error deleting chat:', e);
+    throw e;
+  }
+}
+
   
 
 export const clearChatHistory = async () => {

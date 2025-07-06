@@ -111,65 +111,64 @@ function CustomDrawerContent({ navigation, route }: any) {
     closeMenu();
   };
 
-const handleImport = async () => {
-  console.log('📥 Import started');
-  try {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: ['application/json', 'application/octet-stream', '*/*'],
-      copyToCacheDirectory: true,
-      multiple: false,
-    });
-
-    console.log('📄 DocumentPicker result:', result);
-
-    if (!result.assets || !result.assets[0]) {
-      console.warn('⚠️ No file selected');
-      return;
-    }
-
-    const { uri, name } = result.assets[0];
-    console.log(`📂 Selected file: ${name}, uri: ${uri}`);
-
-    const content = await FileSystem.readAsStringAsync(uri);
-    console.log('📄 File content (first 500 chars):', content.slice(0, 500));
-
-    let parsed;
+  const handleImport = async () => {
+    console.log('📥 Import started');
     try {
-      parsed = JSON.parse(content);
-    } catch (err) {
-      console.error('❌ Invalid JSON format:', err);
-      Alert.alert('Invalid File', 'This file is not a valid JSON or .hexchat export.');
-      return;
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/json', 'application/octet-stream', '*/*'],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+  
+      console.log('📄 DocumentPicker result:', result);
+  
+      if (!result.assets || !result.assets[0]) {
+        console.warn('⚠️ No file selected');
+        return;
+      }
+  
+      const asset = result.assets[0];
+      const { uri, name } = asset;
+  
+      let content = '';
+      if (Platform.OS === 'web') {
+        const base64 = uri.split(',')[1];
+        content = atob(base64);
+        console.log('🌐 Web file loaded using atob');
+      } else {
+        content = await FileSystem.readAsStringAsync(uri);
+        console.log('📱 Native file loaded using FileSystem');
+      }
+  
+      console.log('📄 File content (first 300 chars):', content.slice(0, 300));
+  
+      const parsed = JSON.parse(content);
+      if (!parsed.messages || !Array.isArray(parsed.messages)) {
+        console.error('❌ Invalid structure. Missing messages array.');
+        Alert.alert('Invalid File', 'This file is not a valid chat export.');
+        return;
+      }
+  
+      const newId = Date.now().toString();
+      const title = parsed.title || name || `Imported Chat`;
+  
+      const historyRaw = await loadChatHistory();
+      historyRaw[newId] = {
+        ...parsed,
+        title,
+        timestamp: Date.now(),
+      };
+  
+      await AsyncStorage.setItem('chatHistory', JSON.stringify(historyRaw));
+      console.log(`✅ Chat imported under ID ${newId}`);
+  
+      setHistory(historyRaw);
+      navigation.navigate('Home', { chatId: newId });
+    } catch (e) {
+      console.error('❌ Import failed:', e);
+      Alert.alert('Import Failed', e.message || 'Unknown error');
     }
-
-    if (!parsed.messages || !Array.isArray(parsed.messages)) {
-      console.error('❌ Invalid structure. "messages" field missing or invalid:', parsed);
-      Alert.alert('Invalid File', 'This file is not a valid chat export.');
-      return;
-    }
-
-    const newId = Date.now().toString();
-    const title = parsed.title || name || `Imported Chat`;
-
-    const historyRaw = await loadChatHistory();
-    console.log('🕓 Previous history loaded:', historyRaw);
-
-    historyRaw[newId] = {
-      ...parsed,
-      title,
-      timestamp: Date.now(),
-    };
-
-    await AsyncStorage.setItem('chatHistory', JSON.stringify(historyRaw));
-    console.log(`✅ Chat imported under ID ${newId}`);
-
-    setHistory(historyRaw);
-    navigation.navigate('Home', { chatId: newId });
-  } catch (e) {
-    console.error('❌ Import failed:', e);
-    Alert.alert('Import Failed', e.message || 'Unknown error');
-  }
-};
+  };
 
 
   const onMenuSelect = async (action: string) => {
