@@ -39,10 +39,10 @@ function CustomDrawerContent({ navigation, route }: any) {
   const [history, setHistory] = useState<Record<string, any>>({});
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuChatId, setMenuChatId] = useState<string | null>(null);
-  const activeChatId = route?.params?.chatId;
+  const [activeChatId, setActiveChatId] = useState<string | null>(route?.params?.chatId || null);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+
   
   useFocusEffect(
     useCallback(() => {
