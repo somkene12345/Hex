@@ -40,7 +40,9 @@ function CustomDrawerContent({ navigation, route }: any) {
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuChatId, setMenuChatId] = useState<string | null>(null);
   const activeChatId = route?.params?.chatId;
-
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  
   useFocusEffect(
     useCallback(() => {
       const load = async () => {
@@ -60,7 +62,14 @@ function CustomDrawerContent({ navigation, route }: any) {
     setMenuVisible(false);
     setMenuChatId(null);
   };
-
+  const confirmDeleteChat = async () => {
+    console.log(`🗑 Confirmed deletion of chat ${selectedChatId}`);
+    if (selectedChatId) {
+      await deleteChatFromHistory(selectedChatId);
+    }
+    setShowDeleteModal(false);
+  };
+  
   const handleExport = async (format: 'json' | 'markdown' | 'pdf' | 'hexchat', shareOnly = false) => {
     const id = menuChatId!;
     let content = '';
@@ -164,99 +173,77 @@ function CustomDrawerContent({ navigation, route }: any) {
   
       setHistory(historyRaw);
       navigation.navigate('Home', { chatId: newId });
-    } catch (e) {
+    } catch (e: unknown) {
       console.error('❌ Import failed:', e);
-      Alert.alert('Import Failed', e.message || 'Unknown error');
+    
+      const message = e instanceof Error ? e.message : 'Unknown error';
+      Alert.alert('Import Failed', message);
     }
+    
   };
 
 
   const onMenuSelect = async (action: string) => {
     const id = menuChatId!;
     switch (action) {
-      case 'rename':
-        const newTitle = prompt('New title', history[id].title) || history[id].title;
+      case 'rename': {
+        const newTitle = prompt('New title', history[id]?.title) || history[id]?.title;
         await updateChatTitle(id, newTitle);
         break;
-
+      }
+  
       case 'regenerate': {
         const chat = history[id];
         if (!chat) return;
-
+  
         const sampleMessages = chat.messages.slice(0, 20);
-        const sample = sampleMessages
-          .map((m: any) => `${m.role}: ${m.text}`)
-          .join('\n');
-
+        const sample = sampleMessages.map((m: any) => `${m.role}: ${m.text}`).join('\n');
+  
         const prompt = `Summarize this chat in a maximum of 10 words. Use an objective tone and do not refer to the user or assistant.\n${sample}`;
         const newTitle = await fetchGroqResponse(prompt);
-
         if (newTitle) {
-          const title = newTitle.split('\n')[0].trim().slice(0, 100);
-          await updateChatTitle(id, title);
+          await updateChatTitle(id, newTitle.split('\n')[0].trim().slice(0, 100));
         }
         break;
       }
-
+  
       case 'favorite':
         await toggleFavoriteChat(id);
         break;
-
+  
       case 'pin':
         await togglePinChat(id);
         break;
-
+  
       case 'export_json':
         await handleExport('json');
         break;
-
+  
       case 'export_md':
         await handleExport('markdown');
         break;
-
+  
       case 'export_pdf':
         await handleExport('pdf');
         break;
-
+  
       case 'export_hexchat':
-        await handleExport('hexchat'); // Export to device
+        await handleExport('hexchat');
         break;
-
+  
       case 'share_hexchat':
-        await handleExport('hexchat', true); // Share only
+        await handleExport('hexchat', true);
         break;
-
-        case 'delete':
-          console.log(`🗑 Deleting chat: ${id}`);
-          Alert.alert('Delete Chat?', 'This cannot be undone.', [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Delete', style: 'destructive', onPress: async () => {
-                try {
-                  console.log(`→ Calling deleteChatFromHistory(${id})`);
-                  const updated = await deleteChatFromHistory(id);
-                  console.log('✅ Deleted. New history:', updated);
-        
-                  setHistory(updated);
-                  if (id === activeChatId) {
-                    const newId = Date.now().toString();
-                    console.log(`🔄 Active chat was deleted. Navigating to new chat: ${newId}`);
-                    navigation.navigate('Home', { chatId: newId });
-                  }
-                } catch (e) {
-                  console.error('❌ Failed to delete chat:', e);
-                  Alert.alert('Error', 'Failed to delete chat.');
-                }
-                closeMenu();
-              }
-            }
-          ]);
-          break;              
+  
+      case 'delete':
+        setSelectedChatId(id);
+        setShowDeleteModal(true); // open delete confirmation modal
+        break;
     }
-
-    setHistory(await loadChatHistory());
-    closeMenu();
+  
+    setMenuVisible(false);
   };
+  
 
   const openChat = (id: string) => {
     if (id !== activeChatId) {
@@ -276,48 +263,58 @@ function CustomDrawerContent({ navigation, route }: any) {
       >
         <Text style={styles.newChatText}>+ New Chat</Text>
       </TouchableOpacity>
-
+  
       <Text style={[styles.newChatText, { marginTop: 16, fontWeight: 'bold' }]}>History</Text>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: 10 }}>
-      {Object.entries(history)
-        .sort(([, a], [, b]) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.timestamp - a.timestamp)
-        .map(([id, x]) => {
-          const isActive = id === activeChatId;
-          return (
-            <View key={id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <View style={{ flex: 1 }}>
-                <TouchableOpacity
-                  style={[
-                    styles.newChatButton,
-                    {
-                      flex: 1,
-                      backgroundColor: isActive ? (darkMode ? '#444' : '#ccc') : (darkMode ? '#222' : '#eee'),
-                      borderWidth: isActive ? 1 : 0,
-                      borderColor: isActive ? '#00f' : 'transparent',
-                    },
-                  ]}
-                  onPress={() => openChat(id)}
-                >
-                  <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }} numberOfLines={1}>
-                    {(x.title || 'Untitled Chat') + (x.favorite ? ' ⭐' : '') + (x.pinned ? ' 📌' : '')}
-                  </Text>
+        {Object.entries(history)
+          .sort(([, a], [, b]) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.timestamp - a.timestamp)
+          .map(([id, x]) => {
+            const isActive = id === activeChatId;
+            return (
+              <View key={id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.newChatButton,
+                      {
+                        flex: 1,
+                        backgroundColor: isActive
+                          ? darkMode ? '#444' : '#ccc'
+                          : darkMode ? '#222' : '#eee',
+                        borderWidth: isActive ? 1 : 0,
+                        borderColor: isActive ? '#00f' : 'transparent',
+                      },
+                    ]}
+                    onPress={() => {
+                      activeChatId(id);
+                      console.log(`🖱 Clicked chat ${id}, navigating to chat`);
+                      navigation.navigate('Home', { chatId: id });
+                    }}                    
+                  >
+                    <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }} numberOfLines={1}>
+                      {(x.title || 'Untitled Chat') +
+                        (x.favorite ? ' ⭐' : '') +
+                        (x.pinned ? ' 📌' : '')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+  
+                <TouchableOpacity onPress={() => openMenu(id)}>
+                  <Ionicons name="ellipsis-vertical" size={20} color={darkMode ? '#fff' : '#000'} />
                 </TouchableOpacity>
               </View>
-
-              <TouchableOpacity onPress={() => openMenu(id)}>
-                <Ionicons name="ellipsis-vertical" size={20} color={darkMode ? '#fff' : '#000'} />
-              </TouchableOpacity>
-            </View>
-          );
-        })}
-  </ScrollView>
+            );
+          })}
+      </ScrollView>
+  
       <TouchableOpacity
         style={[styles.newChatButton, { marginTop: 16, backgroundColor: darkMode ? '#333' : '#ddd' }]}
         onPress={handleImport}
       >
         <Text style={[styles.newChatText, { color: darkMode ? '#fff' : '#000' }]}>📂 Import Chat</Text>
       </TouchableOpacity>
-
+  
+      {/* Action Menu Modal */}
       <Modal transparent visible={menuVisible} animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} onPress={closeMenu} />
         <View style={[styles.modalContent, { backgroundColor: darkMode ? '#222' : '#fff' }]}>
@@ -329,8 +326,8 @@ function CustomDrawerContent({ navigation, route }: any) {
             'export_json',
             'export_md',
             'export_pdf',
-            'export_hexchat', // <-- New
-            'share_hexchat', // <-- New
+            'export_hexchat',
+            'share_hexchat',
             'delete',
           ].map((action) => (
             <TouchableOpacity key={action} style={styles.menuOption} onPress={() => onMenuSelect(action)}>
@@ -352,8 +349,42 @@ function CustomDrawerContent({ navigation, route }: any) {
           ))}
         </View>
       </Modal>
+  
+      <Modal visible={showDeleteModal} transparent animationType="fade">
+  <View style={styles.modalOverlay}>
+    <View style={[styles.modalContent, { backgroundColor: darkMode ? '#222' : '#fff' }]}>
+      <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 16, marginBottom: 12 }}>
+        Are you sure you want to delete this chat?
+      </Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+        <TouchableOpacity onPress={() => setShowDeleteModal(false)} style={{ marginRight: 16 }}>
+          <Text style={{ color: '#888' }}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={async () => {
+            if (!selectedChatId) return;
+            try {
+              const updated = await deleteChatFromHistory(selectedChatId);
+              setHistory(updated);
+              if (selectedChatId === activeChatId) {
+                const newId = Date.now().toString();
+                navigation.navigate('Home', { chatId: newId });
+              }
+            } catch (e) {
+              console.error('❌ Failed to delete chat:', e);
+              Alert.alert('Error', 'Failed to delete chat.');
+            }
+            setShowDeleteModal(false);
+          }}
+        >
+          <Text style={{ color: 'red' }}>Delete</Text>
+        </TouchableOpacity>
+      </View>
     </View>
-  );
+  </View>
+</Modal>
+    </View>
+  );  
 }
 
 function TopBar({ onToggleTheme, darkMode, navigation }: any) {
