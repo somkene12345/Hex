@@ -42,6 +42,7 @@ function CustomDrawerContent({ navigation, route }: any) {
   const activeChatId = route?.params?.chatId;
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
   
   useFocusEffect(
     useCallback(() => {
@@ -286,7 +287,7 @@ function CustomDrawerContent({ navigation, route }: any) {
                       },
                     ]}
                     onPress={() => {
-                      activeChatId(id);
+                      setActiveChatId(id);
                       console.log(`🖱 Clicked chat ${id}, navigating to chat`);
                       navigation.navigate('Home', { chatId: id });
                     }}                    
