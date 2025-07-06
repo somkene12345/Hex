@@ -111,41 +111,66 @@ function CustomDrawerContent({ navigation, route }: any) {
     closeMenu();
   };
 
-  const handleImport = async () => {
+const handleImport = async () => {
+  console.log('📥 Import started');
+  try {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ['application/json', 'application/octet-stream', '*/*'],
+      copyToCacheDirectory: true,
+      multiple: false,
+    });
+
+    console.log('📄 DocumentPicker result:', result);
+
+    if (!result.assets || !result.assets[0]) {
+      console.warn('⚠️ No file selected');
+      return;
+    }
+
+    const { uri, name } = result.assets[0];
+    console.log(`📂 Selected file: ${name}, uri: ${uri}`);
+
+    const content = await FileSystem.readAsStringAsync(uri);
+    console.log('📄 File content (first 500 chars):', content.slice(0, 500));
+
+    let parsed;
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/json', 'application/octet-stream', '*/*'],
-        copyToCacheDirectory: true,
-        multiple: false,
-      });
-      
-      if (result.assets && result.assets.length > 0) {
-        const file = result.assets[0];
-        const { uri, name } = file;
-      
-        const content = await FileSystem.readAsStringAsync(uri);
-        let parsed;
-        try { parsed = JSON.parse(content); }
-        catch {
-          Alert.alert('Invalid', 'Not valid JSON/.hexchat');
-          return;
-        }
-      
-        if (!parsed.messages) { /* invalid */ return; }
-      
-        const newId = Date.now().toString();
-        const title = parsed.title || name || 'Imported Chat';
-        const histRaw = await loadChatHistory();
-        histRaw[newId] = { ...parsed, title, timestamp: Date.now() };
-        await AsyncStorage.setItem('chatHistory', JSON.stringify(histRaw));
-        setHistory(histRaw);
-        navigation.navigate('Home', { chatId: newId });
-      }      
-    } catch (e) {
-      const errorMessage = (e as Error).message || 'Unknown error while importing chat.';
-      Alert.alert('Import Failed', errorMessage);
-    }    
-  };  
+      parsed = JSON.parse(content);
+    } catch (err) {
+      console.error('❌ Invalid JSON format:', err);
+      Alert.alert('Invalid File', 'This file is not a valid JSON or .hexchat export.');
+      return;
+    }
+
+    if (!parsed.messages || !Array.isArray(parsed.messages)) {
+      console.error('❌ Invalid structure. "messages" field missing or invalid:', parsed);
+      Alert.alert('Invalid File', 'This file is not a valid chat export.');
+      return;
+    }
+
+    const newId = Date.now().toString();
+    const title = parsed.title || name || `Imported Chat`;
+
+    const historyRaw = await loadChatHistory();
+    console.log('🕓 Previous history loaded:', historyRaw);
+
+    historyRaw[newId] = {
+      ...parsed,
+      title,
+      timestamp: Date.now(),
+    };
+
+    await AsyncStorage.setItem('chatHistory', JSON.stringify(historyRaw));
+    console.log(`✅ Chat imported under ID ${newId}`);
+
+    setHistory(historyRaw);
+    navigation.navigate('Home', { chatId: newId });
+  } catch (e) {
+    console.error('❌ Import failed:', e);
+    Alert.alert('Import Failed', e.message || 'Unknown error');
+  }
+};
+
 
   const onMenuSelect = async (action: string) => {
     const id = menuChatId!;
@@ -203,19 +228,31 @@ function CustomDrawerContent({ navigation, route }: any) {
         break;
 
         case 'delete':
+          console.log(`🗑 Deleting chat: ${id}`);
           Alert.alert('Delete Chat?', 'This cannot be undone.', [
             { text: 'Cancel', style: 'cancel' },
             {
-              text: 'Delete', style: 'destructive',
-              onPress: async () => {
-                const updated = await deleteChatFromHistory(id);
-                setHistory(updated);
-                if (id === activeChatId) openChat(Date.now().toString());
+              text: 'Delete', style: 'destructive', onPress: async () => {
+                try {
+                  console.log(`→ Calling deleteChatFromHistory(${id})`);
+                  const updated = await deleteChatFromHistory(id);
+                  console.log('✅ Deleted. New history:', updated);
+        
+                  setHistory(updated);
+                  if (id === activeChatId) {
+                    const newId = Date.now().toString();
+                    console.log(`🔄 Active chat was deleted. Navigating to new chat: ${newId}`);
+                    navigation.navigate('Home', { chatId: newId });
+                  }
+                } catch (e) {
+                  console.error('❌ Failed to delete chat:', e);
+                  Alert.alert('Error', 'Failed to delete chat.');
+                }
                 closeMenu();
               }
             }
           ]);
-          break;           
+          break;              
     }
 
     setHistory(await loadChatHistory());
@@ -335,16 +372,19 @@ function TopBar({ onToggleTheme, darkMode, navigation }: any) {
   );
 }
 
-function ScreenWithTopBar({ navigation }: any) {
+function ScreenWithTopBar({ navigation, route }: any) {
   const { darkMode, toggleTheme } = useTheme();
+  const chatId = route?.params?.chatId || 'default';
+
   return (
     <View style={{ flex: 1, backgroundColor: darkMode ? '#000' : '#fff' }}>
       <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} />
       <TopBar onToggleTheme={toggleTheme} darkMode={darkMode} navigation={navigation} />
-      <Index />
+      <Index key={chatId} chatId={chatId} /> {/* <== Force re-render with key */}
     </View>
   );
 }
+
 
 function InnerLayout() {
   const { darkMode } = useTheme();
