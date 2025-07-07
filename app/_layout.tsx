@@ -232,9 +232,21 @@ function CustomDrawerContent({ navigation, route }: any) {
         await handleExport('hexchat');
         break;
   
-      case 'share_hexchat':
-        await handleExport('hexchat', true);
-        break;
+        case 'share_hexchat': {
+          const chat = history[id];
+          const content = JSON.stringify(chat, null, 2);
+        
+          try {
+            await Share.share({
+              message: content,
+              title: chat.title || 'Chat Export',
+            });
+          } catch (error) {
+            console.error('❌ Share failed:', error);
+            Alert.alert('Error', 'Could not share the chat.');
+          }
+          break;
+        }        
   
       case 'delete':
         setSelectedChatId(id);
@@ -289,8 +301,13 @@ function CustomDrawerContent({ navigation, route }: any) {
                     onPress={() => {
                       setActiveChatId(id);
                       console.log(`🖱 Clicked chat ${id}, navigating to chat`);
-                      navigation.navigate('Home', { chatId: id });
-                    }}                    
+                    
+                      navigation.navigate('Home', {
+                        chatId: id,
+                        refreshToken: Date.now(), // 👈 force a re-render by changing this
+                      });
+                    }}
+                                  
                   >
                     <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }} numberOfLines={1}>
                       {(x.title || 'Untitled Chat') +
