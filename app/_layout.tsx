@@ -235,16 +235,25 @@ function CustomDrawerContent({ navigation, route }: any) {
         case 'share_hexchat': {
           const chat = history[id];
           const content = JSON.stringify(chat, null, 2);
-        
-          try {
-            await Share.share({
-              message: content,
-              title: chat.title || 'Chat Export',
-            });
-          } catch (error) {
-            console.error('❌ Share failed:', error);
-            Alert.alert('Error', 'Could not share the chat.');
-          }
+          const file = new File([content], `${chat.title || 'chat'}.hexchat`, {
+            type: 'application/json',
+          });
+          
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                title: chat.title || 'Chat Export',
+                text: 'Here’s a chat file to import into Hex.',
+                files: [file],
+              });
+              console.log('✅ Shared successfully');
+            } catch (err) {
+              console.error('❌ Share failed', err);
+              alert('Share canceled or failed.');
+            }
+          } else {
+            alert('Sharing not supported in this browser.');
+          }          
           break;
         }        
   
@@ -300,13 +309,13 @@ function CustomDrawerContent({ navigation, route }: any) {
                     ]}
                     onPress={() => {
                       setActiveChatId(id);
-                      console.log(`🖱 Clicked chat ${id}, navigating to chat`);
-                    
-                      navigation.navigate('Home', {
-                        chatId: id,
-                        refreshToken: Date.now(), // 👈 force a re-render by changing this
+                      console.log(`🖱 Clicked chat ${id}, forcing full navigation reset`);
+                      navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Home', params: { chatId: id } }],
                       });
                     }}
+                    
                                   
                   >
                     <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }} numberOfLines={1}>
