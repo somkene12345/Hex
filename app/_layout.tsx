@@ -12,6 +12,7 @@ import {
   Share,
   Platform,
   ScrollView,
+  Clipboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Index from './index';
@@ -201,18 +202,27 @@ function CustomDrawerContent({ navigation, route }: any) {
       )}`;
 
       if (navigator.share) {
-        await navigator.share({
-          title: chat.title || 'Chat Export',
-          text: 'Here’s a link to a chat in Hex.',
-          url: shareableLink,
-        });
-        console.log('✅ Link shared successfully');
+        try {
+          await navigator.share({
+            title: chat.title || 'Chat Export',
+            text: 'Here’s a link to a chat in Hex.',
+            url: shareableLink,
+          });
+          console.log('✅ Link shared successfully');
+        } catch (err) {
+          console.error('❌ Share failed:', err);
+          Alert.alert('Error', 'Failed to share the link. Copying to clipboard instead.');
+          Clipboard.setString(shareableLink);
+          Alert.alert('Link Copied', 'The shareable link has been copied to your clipboard.');
+        }
       } else {
-        Alert.alert('Share Link', `Copy and share this link:\n\n${shareableLink}`);
+        // Fallback for unsupported browsers
+        Clipboard.setString(shareableLink);
+        Alert.alert('Link Copied', 'The shareable link has been copied to your clipboard.');
       }
     } catch (err) {
-      console.error('❌ Share failed', err);
-      Alert.alert('Error', 'Failed to share the link.');
+      console.error('❌ Share failed:', err);
+      Alert.alert('Error', 'Failed to generate the shareable link.');
     }
   };
 
