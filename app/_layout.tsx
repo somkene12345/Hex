@@ -12,7 +12,6 @@ import {
   Share,
   Platform,
   ScrollView,
-  Clipboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Index from './index';
@@ -31,6 +30,7 @@ import { fetchGroqResponse } from '../services/groqService';
 import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Clipboard from 'expo-clipboard'; // Replace deprecated Clipboard
 
 const Drawer = createDrawerNavigator();
 
@@ -201,6 +201,12 @@ function CustomDrawerContent({ navigation, route }: any) {
         })
       )}`;
 
+      // Log the details
+      console.log('📄 Title:', chat.title);
+      console.log('⏰ Timestamp:', chat.timestamp);
+      console.log('💬 Messages:', chat.messages);
+      console.log('🔗 Shareable Link:', shareableLink);
+
       if (navigator.share) {
         try {
           await navigator.share({
@@ -212,12 +218,12 @@ function CustomDrawerContent({ navigation, route }: any) {
         } catch (err) {
           console.error('❌ Share failed:', err);
           Alert.alert('Error', 'Failed to share the link. Copying to clipboard instead.');
-          Clipboard.setString(shareableLink);
+          await Clipboard.setStringAsync(shareableLink); // Use expo-clipboard
           Alert.alert('Link Copied', 'The shareable link has been copied to your clipboard.');
         }
       } else {
         // Fallback for unsupported browsers
-        Clipboard.setString(shareableLink);
+        await Clipboard.setStringAsync(shareableLink); // Use expo-clipboard
         Alert.alert('Link Copied', 'The shareable link has been copied to your clipboard.');
       }
     } catch (err) {
