@@ -273,7 +273,11 @@ function CustomDrawerContent({ navigation, route }: any) {
 
   const openChat = (id: string) => {
     if (id !== activeChatId) {
-      navigation.navigate('Home', { chatId: id });
+      setActiveChatId(id); // Update the active chat ID
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home', params: { chatId: id } }],
+      });
     }
   };
   
