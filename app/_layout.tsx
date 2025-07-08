@@ -233,32 +233,40 @@ function CustomDrawerContent({ navigation, route }: any) {
         break;
   
         case 'share_hexchat': {
-          const chat = history[menuChatId!]; // make sure chat is defined
+          const chat = history[menuChatId!]; // Ensure chat is defined
+          if (!chat) {
+            alert('Chat not found.');
+            return;
+          }
+        
+          // Prepare the file synchronously
           const content = JSON.stringify(chat, null, 2);
           const blob = new Blob([content], { type: 'application/json' });
           const file = new File([blob], `${chat.title || 'chat'}.hexchat`, {
             type: 'application/json',
           });
-          console.log('canShare:', navigator.canShare?.({ files: [file] }));
-          console.log('navigator.share:', typeof navigator.share);
-
+        
+          // Check if the browser supports file sharing
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
-              await navigator.share({
+            // Call navigator.share immediately after the user gesture
+            navigator
+              .share({
                 title: chat.title || 'Chat Export',
+                text: 'Here’s a chat file to import into Hex.',
                 files: [file],
+              })
+              .then(() => {
+                console.log('✅ File shared successfully');
+              })
+              .catch((err) => {
+                console.error('❌ Share failed', err);
+                alert('Share canceled or failed.');
               });
-              console.log('✅ File shared');
-            } catch (err) {
-              console.error('❌ Share failed', err);
-              alert('Share canceled or failed.');
-            }
           } else {
             alert('❌ Your browser does not support file sharing via Web Share API.');
           }
-           
           break;
-        }        
+        }
   
       case 'delete':
         setSelectedChatId(id);
