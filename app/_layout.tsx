@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -42,8 +42,8 @@ function CustomDrawerContent({ navigation, route }: any) {
   const [activeChatId, setActiveChatId] = useState<string | null>(route?.params?.chatId || null);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
 
-  
   useFocusEffect(
     useCallback(() => {
       const load = async () => {
@@ -53,6 +53,19 @@ function CustomDrawerContent({ navigation, route }: any) {
       load();
     }, [])
   );
+
+  useEffect(() => {
+    const loadMessages = async () => {
+      if (!activeChatId) return; // Ensure chatId is available
+      const history = await loadChatHistory();
+      const chat = history?.[activeChatId] ?? null;
+      setMessages(chat?.messages ?? []);
+    };
+
+    loadMessages();
+  }, [activeChatId]);
+
+  console.log('Active Chat ID:', activeChatId);
 
   const openMenu = (chatId: string) => {
     setMenuChatId(chatId);
@@ -70,7 +83,7 @@ function CustomDrawerContent({ navigation, route }: any) {
     }
     setShowDeleteModal(false);
   };
-  
+
   const handleExport = async (format: 'json' | 'markdown' | 'pdf' | 'hexchat', shareOnly = false) => {
     const id = menuChatId!;
     let content = '';
@@ -129,17 +142,17 @@ function CustomDrawerContent({ navigation, route }: any) {
         copyToCacheDirectory: true,
         multiple: false,
       });
-  
+
       console.log('📄 DocumentPicker result:', result);
-  
+
       if (!result.assets || !result.assets[0]) {
         console.warn('⚠️ No file selected');
         return;
       }
-  
+
       const asset = result.assets[0];
       const { uri, name } = asset;
-  
+
       let content = '';
       if (Platform.OS === 'web') {
         const base64 = uri.split(',')[1];
@@ -149,40 +162,38 @@ function CustomDrawerContent({ navigation, route }: any) {
         content = await FileSystem.readAsStringAsync(uri);
         console.log('📱 Native file loaded using FileSystem');
       }
-  
+
       console.log('📄 File content (first 300 chars):', content.slice(0, 300));
-  
+
       const parsed = JSON.parse(content);
       if (!parsed.messages || !Array.isArray(parsed.messages)) {
         console.error('❌ Invalid structure. Missing messages array.');
         Alert.alert('Invalid File', 'This file is not a valid chat export.');
         return;
       }
-  
+
       const newId = Date.now().toString();
       const title = parsed.title || name || `Imported Chat`;
-  
+
       const historyRaw = await loadChatHistory();
       historyRaw[newId] = {
         ...parsed,
         title,
         timestamp: Date.now(),
       };
-  
+
       await AsyncStorage.setItem('chatHistory', JSON.stringify(historyRaw));
       console.log(`✅ Chat imported under ID ${newId}`);
-  
+
       setHistory(historyRaw);
       navigation.navigate('Home', { chatId: newId });
     } catch (e: unknown) {
       console.error('❌ Import failed:', e);
-    
+
       const message = e instanceof Error ? e.message : 'Unknown error';
       Alert.alert('Import Failed', message);
     }
-    
   };
-
 
   const onMenuSelect = async (action: string) => {
     const id = menuChatId!;
@@ -192,14 +203,14 @@ function CustomDrawerContent({ navigation, route }: any) {
         await updateChatTitle(id, newTitle);
         break;
       }
-  
+
       case 'regenerate': {
         const chat = history[id];
         if (!chat) return;
-  
+
         const sampleMessages = chat.messages.slice(0, 20);
         const sample = sampleMessages.map((m: any) => `${m.role}: ${m.text}`).join('\n');
-  
+
         const prompt = `Summarize this chat in a maximum of 10 words. Use an objective tone and do not refer to the user or assistant.\n${sample}`;
         const newTitle = await fetchGroqResponse(prompt);
         if (newTitle) {
@@ -207,69 +218,68 @@ function CustomDrawerContent({ navigation, route }: any) {
         }
         break;
       }
-  
+
       case 'favorite':
         await toggleFavoriteChat(id);
         break;
-  
+
       case 'pin':
         await togglePinChat(id);
         break;
-  
+
       case 'export_json':
         await handleExport('json');
         break;
-  
+
       case 'export_md':
         await handleExport('markdown');
         break;
-  
+
       case 'export_pdf':
         await handleExport('pdf');
         break;
-  
+
       case 'export_hexchat':
         await handleExport('hexchat');
         break;
-  
-        case 'share_hexchat': {
-          const chat = history[menuChatId!]; // make sure chat is defined
-          const content = JSON.stringify(chat, null, 2);
-          const blob = new Blob([content], { type: 'application/json' });
-          const file = new File([blob], `${chat.title || 'chat'}.hexchat`, {
-            type: 'application/json',
-          });
-          
-          console.log('canShare:', navigator.canShare?.({ files: [file] }));
-          console.log('navigator.share:', typeof navigator.share);
 
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
-              await navigator.share({
-                title: chat.title || 'Chat Export',
-                files: [file],
-              });
-              console.log('✅ File shared');
-            } catch (err) {
-              console.error('❌ Share failed', err);
-              alert('Share canceled or failed.');
-            }
-          } else {
-            alert('❌ Your browser does not support file sharing via Web Share API.');
+      case 'share_hexchat': {
+        const chat = history[menuChatId!]; // make sure chat is defined
+        const content = JSON.stringify(chat, null, 2);
+        const blob = new Blob([content], { type: 'application/json' });
+        const file = new File([blob], `${chat.title || 'chat'}.hexchat`, {
+          type: 'application/json',
+        });
+
+        console.log('canShare:', navigator.canShare?.({ files: [file] }));
+        console.log('navigator.share:', typeof navigator.share);
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              title: chat.title || 'Chat Export',
+              files: [file],
+            });
+            console.log('✅ File shared');
+          } catch (err) {
+            console.error('❌ Share failed', err);
+            alert('Share canceled or failed.');
           }
-           
-          break;
-        }        
-  
+        } else {
+          alert('❌ Your browser does not support file sharing via Web Share API.');
+        }
+
+        break;
+      }
+
       case 'delete':
         setSelectedChatId(id);
         setShowDeleteModal(true); // open delete confirmation modal
         break;
     }
-  
+
     setMenuVisible(false);
   };
-  
 
   const openChat = (id: string) => {
     if (id !== activeChatId) {
@@ -280,7 +290,6 @@ function CustomDrawerContent({ navigation, route }: any) {
       });
     }
   };
-  
 
   return (
     <View style={styles.drawerContainer}>
@@ -293,7 +302,7 @@ function CustomDrawerContent({ navigation, route }: any) {
       >
         <Text style={styles.newChatText}>+ New Chat</Text>
       </TouchableOpacity>
-  
+
       <Text style={[styles.newChatText, { marginTop: 16, fontWeight: 'bold' }]}>History</Text>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: 10 }}>
         {Object.entries(history)
@@ -323,8 +332,6 @@ function CustomDrawerContent({ navigation, route }: any) {
                         routes: [{ name: 'Home', params: { chatId: id } }],
                       });
                     }}
-                    
-                                  
                   >
                     <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }} numberOfLines={1}>
                       {(x.title || 'Untitled Chat') +
@@ -333,7 +340,7 @@ function CustomDrawerContent({ navigation, route }: any) {
                     </Text>
                   </TouchableOpacity>
                 </View>
-  
+
                 <TouchableOpacity onPress={() => openMenu(id)}>
                   <Ionicons name="ellipsis-vertical" size={20} color={darkMode ? '#fff' : '#000'} />
                 </TouchableOpacity>
@@ -341,14 +348,14 @@ function CustomDrawerContent({ navigation, route }: any) {
             );
           })}
       </ScrollView>
-  
+
       <TouchableOpacity
         style={[styles.newChatButton, { marginTop: 16, backgroundColor: darkMode ? '#333' : '#ddd' }]}
         onPress={handleImport}
       >
         <Text style={[styles.newChatText, { color: darkMode ? '#fff' : '#000' }]}>📂 Import Chat</Text>
       </TouchableOpacity>
-  
+
       {/* Action Menu Modal */}
       <Modal transparent visible={menuVisible} animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} onPress={closeMenu} />
@@ -384,42 +391,42 @@ function CustomDrawerContent({ navigation, route }: any) {
           ))}
         </View>
       </Modal>
-  
+
       <Modal visible={showDeleteModal} transparent animationType="fade">
-  <View style={styles.modalOverlay}>
-    <View style={[styles.modalContent, { backgroundColor: darkMode ? '#222' : '#fff' }]}>
-      <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 16, marginBottom: 12 }}>
-        Are you sure you want to delete this chat?
-      </Text>
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-        <TouchableOpacity onPress={() => setShowDeleteModal(false)} style={{ marginRight: 16 }}>
-          <Text style={{ color: '#888' }}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={async () => {
-            if (!selectedChatId) return;
-            try {
-              const updated = await deleteChatFromHistory(selectedChatId);
-              setHistory(updated);
-              if (selectedChatId === activeChatId) {
-                const newId = Date.now().toString();
-                navigation.navigate('Home', { chatId: newId });
-              }
-            } catch (e) {
-              console.error('❌ Failed to delete chat:', e);
-              Alert.alert('Error', 'Failed to delete chat.');
-            }
-            setShowDeleteModal(false);
-          }}
-        >
-          <Text style={{ color: 'red' }}>Delete</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: darkMode ? '#222' : '#fff' }]}>
+            <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 16, marginBottom: 12 }}>
+              Are you sure you want to delete this chat?
+            </Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+              <TouchableOpacity onPress={() => setShowDeleteModal(false)} style={{ marginRight: 16 }}>
+                <Text style={{ color: '#888' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={async () => {
+                  if (!selectedChatId) return;
+                  try {
+                    const updated = await deleteChatFromHistory(selectedChatId);
+                    setHistory(updated);
+                    if (selectedChatId === activeChatId) {
+                      const newId = Date.now().toString();
+                      navigation.navigate('Home', { chatId: newId });
+                    }
+                  } catch (e) {
+                    console.error('❌ Failed to delete chat:', e);
+                    Alert.alert('Error', 'Failed to delete chat.');
+                  }
+                  setShowDeleteModal(false);
+                }}
+              >
+                <Text style={{ color: 'red' }}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
-  </View>
-</Modal>
-    </View>
-  );  
+  );
 }
 
 function TopBar({ onToggleTheme, darkMode, navigation }: any) {
@@ -441,15 +448,16 @@ function ScreenWithTopBar({ navigation, route }: any) {
   const { darkMode, toggleTheme } = useTheme();
   const chatId = route?.params?.chatId || 'default';
 
+
   return (
     <View style={{ flex: 1, backgroundColor: darkMode ? '#000' : '#fff' }}>
       <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} />
       <TopBar onToggleTheme={toggleTheme} darkMode={darkMode} navigation={navigation} />
-      <Index key={chatId} chatId={chatId} /> {/* <== Force re-render with key */}
+      {/* Force re-render with key */}
+      <Index key={chatId} chatId={chatId} />
     </View>
   );
 }
-
 
 function InnerLayout() {
   const { darkMode } = useTheme();
