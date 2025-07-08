@@ -43,7 +43,6 @@ function CustomDrawerContent({ navigation, route }: any) {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  
   useFocusEffect(
     useCallback(() => {
       const load = async () => {
@@ -63,6 +62,7 @@ function CustomDrawerContent({ navigation, route }: any) {
     setMenuVisible(false);
     setMenuChatId(null);
   };
+
   const confirmDeleteChat = async () => {
     console.log(`🗑 Confirmed deletion of chat ${selectedChatId}`);
     if (selectedChatId) {
@@ -70,7 +70,7 @@ function CustomDrawerContent({ navigation, route }: any) {
     }
     setShowDeleteModal(false);
   };
-  
+
   const handleExport = async (format: 'json' | 'markdown' | 'pdf' | 'hexchat', shareOnly = false) => {
     const id = menuChatId!;
     let content = '';
@@ -129,17 +129,17 @@ function CustomDrawerContent({ navigation, route }: any) {
         copyToCacheDirectory: true,
         multiple: false,
       });
-  
+
       console.log('📄 DocumentPicker result:', result);
-  
+
       if (!result.assets || !result.assets[0]) {
         console.warn('⚠️ No file selected');
         return;
       }
-  
+
       const asset = result.assets[0];
       const { uri, name } = asset;
-  
+
       let content = '';
       if (Platform.OS === 'web') {
         const base64 = uri.split(',')[1];
@@ -149,40 +149,68 @@ function CustomDrawerContent({ navigation, route }: any) {
         content = await FileSystem.readAsStringAsync(uri);
         console.log('📱 Native file loaded using FileSystem');
       }
-  
+
       console.log('📄 File content (first 300 chars):', content.slice(0, 300));
-  
+
       const parsed = JSON.parse(content);
       if (!parsed.messages || !Array.isArray(parsed.messages)) {
         console.error('❌ Invalid structure. Missing messages array.');
         Alert.alert('Invalid File', 'This file is not a valid chat export.');
         return;
       }
-  
+
       const newId = Date.now().toString();
       const title = parsed.title || name || `Imported Chat`;
-  
+
       const historyRaw = await loadChatHistory();
       historyRaw[newId] = {
         ...parsed,
         title,
         timestamp: Date.now(),
       };
-  
+
       await AsyncStorage.setItem('chatHistory', JSON.stringify(historyRaw));
       console.log(`✅ Chat imported under ID ${newId}`);
-  
+
       setHistory(historyRaw);
       navigation.navigate('Home', { chatId: newId });
     } catch (e: unknown) {
       console.error('❌ Import failed:', e);
-    
+
       const message = e instanceof Error ? e.message : 'Unknown error';
       Alert.alert('Import Failed', message);
     }
-    
   };
 
+  const handleShare = async () => {
+    const chat = history[menuChatId!];
+    if (!chat) {
+      Alert.alert('Error', 'Chat not found.');
+      return;
+    }
+
+    try {
+      // Generate a shareable link with chat metadata as a query parameter
+      const baseUrl = 'https://hex-jet.vercel.app';
+      const shareableLink = `${baseUrl}?chatId=${menuChatId}&metadata=${encodeURIComponent(
+        JSON.stringify({ title: chat.title, timestamp: chat.timestamp })
+      )}`;
+
+      if (navigator.share) {
+        await navigator.share({
+          title: chat.title || 'Chat Export',
+          text: 'Here’s a link to a chat in Hex.',
+          url: shareableLink,
+        });
+        console.log('✅ Link shared successfully');
+      } else {
+        Alert.alert('Share Link', `Copy and share this link:\n\n${shareableLink}`);
+      }
+    } catch (err) {
+      console.error('❌ Share failed', err);
+      Alert.alert('Error', 'Failed to share the link.');
+    }
+  };
 
   const onMenuSelect = async (action: string) => {
     const id = menuChatId!;
@@ -192,14 +220,14 @@ function CustomDrawerContent({ navigation, route }: any) {
         await updateChatTitle(id, newTitle);
         break;
       }
-  
+
       case 'regenerate': {
         const chat = history[id];
         if (!chat) return;
-  
+
         const sampleMessages = chat.messages.slice(0, 20);
         const sample = sampleMessages.map((m: any) => `${m.role}: ${m.text}`).join('\n');
-  
+
         const prompt = `Summarize this chat in a maximum of 10 words. Use an objective tone and do not refer to the user or assistant.\n${sample}`;
         const newTitle = await fetchGroqResponse(prompt);
         if (newTitle) {
@@ -207,80 +235,49 @@ function CustomDrawerContent({ navigation, route }: any) {
         }
         break;
       }
-  
+
       case 'favorite':
         await toggleFavoriteChat(id);
         break;
-  
+
       case 'pin':
         await togglePinChat(id);
         break;
-  
+
       case 'export_json':
         await handleExport('json');
         break;
-  
+
       case 'export_md':
         await handleExport('markdown');
         break;
-  
+
       case 'export_pdf':
         await handleExport('pdf');
         break;
-  
+
       case 'export_hexchat':
         await handleExport('hexchat');
         break;
-  
-case 'share_hexchat': {
-  const chat = history[menuChatId!]; // Ensure chat is defined
-  if (!chat) {
-    alert('Chat not found.');
-    return;
-  }
 
-  // Prepare the file synchronously
-  const content = JSON.stringify(chat);
-  const blob = new Blob([content], { type: 'application/json' });
-  const file = new File([blob], `${chat.title || 'chat'}.hexchat`, {
-    type: 'application/json',
-  });
+      case 'share':
+        await handleShare();
+        break;
 
-  // Call navigator.share immediately after the user gesture
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    navigator
-      .share({
-        title: chat.title || 'Chat Export',
-        text: 'Here’s a chat file to import into Hex.',
-        file,
-      })
-      .then(() => console.log('✅ File shared successfully'))
-      .catch((err) => {
-        console.error('❌ Share failed', err);
-        alert('Share canceled or failed.');
-      });
-  } else {
-    alert('❌ Your browser does not support file sharing via Web Share API.');
-  }
-  break;
-}
-  
       case 'delete':
         setSelectedChatId(id);
         setShowDeleteModal(true); // open delete confirmation modal
         break;
     }
-  
+
     setMenuVisible(false);
   };
-  
 
   const openChat = (id: string) => {
     if (id !== activeChatId) {
       navigation.navigate('Home', { chatId: id });
     }
   };
-  
 
   return (
     <View style={styles.drawerContainer}>
@@ -293,7 +290,7 @@ case 'share_hexchat': {
       >
         <Text style={styles.newChatText}>+ New Chat</Text>
       </TouchableOpacity>
-  
+
       <Text style={[styles.newChatText, { marginTop: 16, fontWeight: 'bold' }]}>History</Text>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: 10 }}>
         {Object.entries(history)
@@ -323,8 +320,6 @@ case 'share_hexchat': {
                         routes: [{ name: 'Home', params: { chatId: id } }],
                       });
                     }}
-                    
-                                  
                   >
                     <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 14 }} numberOfLines={1}>
                       {(x.title || 'Untitled Chat') +
@@ -333,7 +328,7 @@ case 'share_hexchat': {
                     </Text>
                   </TouchableOpacity>
                 </View>
-  
+
                 <TouchableOpacity onPress={() => openMenu(id)}>
                   <Ionicons name="ellipsis-vertical" size={20} color={darkMode ? '#fff' : '#000'} />
                 </TouchableOpacity>
@@ -341,14 +336,14 @@ case 'share_hexchat': {
             );
           })}
       </ScrollView>
-  
+
       <TouchableOpacity
         style={[styles.newChatButton, { marginTop: 16, backgroundColor: darkMode ? '#333' : '#ddd' }]}
         onPress={handleImport}
       >
         <Text style={[styles.newChatText, { color: darkMode ? '#fff' : '#000' }]}>📂 Import Chat</Text>
       </TouchableOpacity>
-  
+
       {/* Action Menu Modal */}
       <Modal transparent visible={menuVisible} animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} onPress={closeMenu} />
@@ -362,7 +357,7 @@ case 'share_hexchat': {
             'export_md',
             'export_pdf',
             'export_hexchat',
-            'share_hexchat',
+            'share', // Updated to "share"
             'delete',
           ].map((action) => (
             <TouchableOpacity key={action} style={styles.menuOption} onPress={() => onMenuSelect(action)}>
@@ -376,7 +371,7 @@ case 'share_hexchat': {
                   export_md: 'Export Markdown',
                   export_pdf: 'Export PDF',
                   export_hexchat: 'Export .hexchat File',
-                  share_hexchat: 'Share .hexchat File',
+                  share: 'Share', // Updated text
                   delete: 'Delete',
                 }[action]}
               </Text>
@@ -384,42 +379,42 @@ case 'share_hexchat': {
           ))}
         </View>
       </Modal>
-  
+
       <Modal visible={showDeleteModal} transparent animationType="fade">
-  <View style={styles.modalOverlay}>
-    <View style={[styles.modalContent, { backgroundColor: darkMode ? '#222' : '#fff' }]}>
-      <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 16, marginBottom: 12 }}>
-        Are you sure you want to delete this chat?
-      </Text>
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-        <TouchableOpacity onPress={() => setShowDeleteModal(false)} style={{ marginRight: 16 }}>
-          <Text style={{ color: '#888' }}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={async () => {
-            if (!selectedChatId) return;
-            try {
-              const updated = await deleteChatFromHistory(selectedChatId);
-              setHistory(updated);
-              if (selectedChatId === activeChatId) {
-                const newId = Date.now().toString();
-                navigation.navigate('Home', { chatId: newId });
-              }
-            } catch (e) {
-              console.error('❌ Failed to delete chat:', e);
-              Alert.alert('Error', 'Failed to delete chat.');
-            }
-            setShowDeleteModal(false);
-          }}
-        >
-          <Text style={{ color: 'red' }}>Delete</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: darkMode ? '#222' : '#fff' }]}>
+            <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 16, marginBottom: 12 }}>
+              Are you sure you want to delete this chat?
+            </Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+              <TouchableOpacity onPress={() => setShowDeleteModal(false)} style={{ marginRight: 16 }}>
+                <Text style={{ color: '#888' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={async () => {
+                  if (!selectedChatId) return;
+                  try {
+                    const updated = await deleteChatFromHistory(selectedChatId);
+                    setHistory(updated);
+                    if (selectedChatId === activeChatId) {
+                      const newId = Date.now().toString();
+                      navigation.navigate('Home', { chatId: newId });
+                    }
+                  } catch (e) {
+                    console.error('❌ Failed to delete chat:', e);
+                    Alert.alert('Error', 'Failed to delete chat.');
+                  }
+                  setShowDeleteModal(false);
+                }}
+              >
+                <Text style={{ color: 'red' }}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
-  </View>
-</Modal>
-    </View>
-  );  
+  );
 }
 
 function TopBar({ onToggleTheme, darkMode, navigation }: any) {
@@ -449,7 +444,6 @@ function ScreenWithTopBar({ navigation, route }: any) {
     </View>
   );
 }
-
 
 function InnerLayout() {
   const { darkMode } = useTheme();
