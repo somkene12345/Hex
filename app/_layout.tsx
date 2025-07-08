@@ -240,6 +240,9 @@ function CustomDrawerContent({ navigation, route }: any) {
             type: 'application/json',
           });
           
+          console.log('canShare:', navigator.canShare?.({ files: [file] }));
+          console.log('navigator.share:', typeof navigator.share);
+
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
               await navigator.share({
