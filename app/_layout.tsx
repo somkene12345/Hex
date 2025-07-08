@@ -31,6 +31,7 @@ import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard'; // Replace deprecated Clipboard
+import pako from 'pako'; // Import pako for compression
 
 const Drawer = createDrawerNavigator();
 
@@ -191,15 +192,22 @@ function CustomDrawerContent({ navigation, route }: any) {
     }
 
     try {
-      // Generate a shareable link with chat messages and metadata as a query parameter
-      const baseUrl = 'https://hex-jet.vercel.app';
-      const shareableLink = `${baseUrl}?chatId=${menuChatId}&data=${encodeURIComponent(
+      // Compress the data
+      const compressedData = pako.deflate(
         JSON.stringify({
           title: chat.title,
           timestamp: chat.timestamp,
           messages: chat.messages,
-        })
-      )}`;
+        }),
+        { to: 'string' }
+      );
+
+      // Encode the compressed data as a base64 string
+      const base64Data = btoa(compressedData);
+
+      // Generate the shareable link
+      const baseUrl = 'https://hex-jet.vercel.app';
+      const shareableLink = `${baseUrl}?chatId=${menuChatId}&data=${encodeURIComponent(base64Data)}`;
 
       // Log the details
       console.log('📄 Title:', chat.title);
