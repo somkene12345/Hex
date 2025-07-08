@@ -252,7 +252,7 @@ case 'share_hexchat': {
       .share({
         title: chat.title || 'Chat Export',
         text: 'Here’s a chat file to import into Hex.',
-        files: [file],
+        file,
       })
       .then(() => console.log('✅ File shared successfully'))
       .catch((err) => {
