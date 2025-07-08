@@ -32,6 +32,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard'; // Replace deprecated Clipboard
 import pako from 'pako'; // Import pako for compression
+import { encode as base64Encode } from 'base-64';
 
 const Drawer = createDrawerNavigator();
 
@@ -190,48 +191,31 @@ function CustomDrawerContent({ navigation, route }: any) {
       Alert.alert('Error', 'Chat not found.');
       return;
     }
-
+  
     try {
-      // Compress the data
-      const compressedData = pako.deflate(
+      // Compress properly into Uint8Array
+      const compressed = pako.deflate(
         JSON.stringify({
           title: chat.title,
           timestamp: chat.timestamp,
           messages: chat.messages,
-        }),
-        { to: 'string' }
+        })
       );
-
-      // Encode the compressed data as a base64 string
-      const base64Data = btoa(compressedData);
-
-      // Generate the shareable link
+  
+      // Encode Uint8Array to base64
+      const base64Data = base64Encode(String.fromCharCode(...compressed));
+  
       const baseUrl = 'https://hex-jet.vercel.app';
       const shareableLink = `${baseUrl}?chatId=${menuChatId}&data=${encodeURIComponent(base64Data)}`;
-
-      // Log the details
-      console.log('📄 Title:', chat.title);
-      console.log('⏰ Timestamp:', chat.timestamp);
-      console.log('💬 Messages:', chat.messages);
-      console.log('🔗 Shareable Link:', shareableLink);
-
+  
       if (navigator.share) {
-        try {
-          await navigator.share({
-            title: chat.title || 'Chat Export',
-            text: 'Here’s a link to a chat in Hex.',
-            url: shareableLink,
-          });
-          console.log('✅ Link shared successfully');
-        } catch (err) {
-          console.error('❌ Share failed:', err);
-          Alert.alert('Error', 'Failed to share the link. Copying to clipboard instead.');
-          await Clipboard.setStringAsync(shareableLink); // Use expo-clipboard
-          Alert.alert('Link Copied', 'The shareable link has been copied to your clipboard.');
-        }
+        await navigator.share({
+          title: chat.title || 'Chat Export',
+          text: 'Here’s a link to a chat in Hex.',
+          url: shareableLink,
+        });
       } else {
-        // Fallback for unsupported browsers
-        await Clipboard.setStringAsync(shareableLink); // Use expo-clipboard
+        await Clipboard.setStringAsync(shareableLink);
         Alert.alert('Link Copied', 'The shareable link has been copied to your clipboard.');
       }
     } catch (err) {

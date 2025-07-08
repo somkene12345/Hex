@@ -4,6 +4,8 @@ import Chat from "../components/Chat";
 import { useTheme } from "../theme/ThemeContext";
 import { saveChatToHistory, loadChatHistory } from "../utils/chatStorage";
 import pako from 'pako'; // Import pako for decompression
+import { decode as base64Decode } from 'base-64';
+
 
 const Index = ({ route }: any) => {
   const { darkMode } = useTheme();
@@ -17,33 +19,27 @@ const Index = ({ route }: any) => {
     const handleData = async () => {
       if (data && chatId) {
         try {
-          // Decode the base64 string and decompress the data
-          const decompressedData = JSON.parse(
-            pako.inflate(atob(data), { to: 'string' })
-          );
-          console.log('📄 Received decompressed data:', decompressedData);
-
-          // Load existing chat history
+          // Decode base64 to binary string
+          const binaryStr = base64Decode(data);
+  
+          // Convert binary string to Uint8Array
+          const byteArray = new Uint8Array(binaryStr.split('').map(c => c.charCodeAt(0)));
+  
+          // Decompress and parse JSON
+          const decompressedData = JSON.parse(pako.inflate(byteArray, { to: 'string' }));
+  
           const history = await loadChatHistory();
-
-          // Check if the chat already exists in history
+  
           if (!history[chatId]) {
-            // Add the data (messages and metadata) to the chat history
-            const newChat = {
-              messages: decompressedData.messages || [],
-              title: decompressedData.title || "Untitled Chat",
-              timestamp: decompressedData.timestamp || Date.now(),
-            };
-
-            await saveChatToHistory(chatId, newChat.messages);
-            console.log(`✅ Data added to chat history for chatId: ${chatId}`);
+            await saveChatToHistory(chatId, decompressedData.messages);
+            console.log(`✅ Chat saved for chatId: ${chatId}`);
           }
         } catch (err) {
           console.error('❌ Failed to parse or save data:', err);
         }
       }
     };
-
+  
     handleData();
   }, [data, chatId]);
 
