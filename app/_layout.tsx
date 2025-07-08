@@ -190,10 +190,14 @@ function CustomDrawerContent({ navigation, route }: any) {
     }
 
     try {
-      // Generate a shareable link with chat metadata as a query parameter
+      // Generate a shareable link with chat messages and metadata as a query parameter
       const baseUrl = 'https://hex-jet.vercel.app';
-      const shareableLink = `${baseUrl}?chatId=${menuChatId}&metadata=${encodeURIComponent(
-        JSON.stringify({ title: chat.title, timestamp: chat.timestamp })
+      const shareableLink = `${baseUrl}?chatId=${menuChatId}&data=${encodeURIComponent(
+        JSON.stringify({
+          title: chat.title,
+          timestamp: chat.timestamp,
+          messages: chat.messages,
+        })
       )}`;
 
       if (navigator.share) {

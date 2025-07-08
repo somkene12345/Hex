@@ -9,39 +9,39 @@ const Index = ({ route }: any) => {
   const queryParams =
     typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const queryChatId = queryParams?.get('chatId');
-  const metadata = queryParams?.get('metadata');
+  const data = queryParams?.get('data');
   const chatId = route?.params?.chatId || queryChatId;
 
   useEffect(() => {
-    const handleMetadata = async () => {
-      if (metadata && chatId) {
+    const handleData = async () => {
+      if (data && chatId) {
         try {
-          const parsedMetadata = JSON.parse(decodeURIComponent(metadata));
-          console.log('📄 Received metadata:', parsedMetadata);
+          const parsedData = JSON.parse(decodeURIComponent(data));
+          console.log('📄 Received data:', parsedData);
 
           // Load existing chat history
           const history = await loadChatHistory();
 
           // Check if the chat already exists in history
           if (!history[chatId]) {
-            // Add the metadata to the chat history
+            // Add the data (messages and metadata) to the chat history
             const newChat = {
-              messages: [], // Initialize with an empty messages array
-              title: parsedMetadata.title || "Untitled Chat",
-              timestamp: parsedMetadata.timestamp || Date.now(),
+              messages: parsedData.messages || [],
+              title: parsedData.title || "Untitled Chat",
+              timestamp: parsedData.timestamp || Date.now(),
             };
 
             await saveChatToHistory(chatId, newChat.messages);
-            console.log(`✅ Metadata added to chat history for chatId: ${chatId}`);
+            console.log(`✅ Data added to chat history for chatId: ${chatId}`);
           }
         } catch (err) {
-          console.error('❌ Failed to parse or save metadata:', err);
+          console.error('❌ Failed to parse or save data:', err);
         }
       }
     };
 
-    handleMetadata();
-  }, [metadata, chatId]);
+    handleData();
+  }, [data, chatId]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: darkMode ? "#000" : "#fff" }}>
