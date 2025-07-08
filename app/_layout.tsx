@@ -240,7 +240,7 @@ case 'share_hexchat': {
   }
 
   // Prepare the file synchronously
-  const content = JSON.stringify(chat, null, 2);
+  const content = JSON.stringify(chat);
   const blob = new Blob([content], { type: 'application/json' });
   const file = new File([blob], `${chat.title || 'chat'}.hexchat`, {
     type: 'application/json',
