@@ -1,19 +1,19 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchGroqResponse } from '../services/groqService';
+import { pushChatToRTDB, getUserId } from './firebaseService';
 
 const HISTORY_KEY = 'chatHistory';
 
 const generateShortTitle = async (messages: any[]) => {
-    const sample = messages
-      .slice(0, 5) // ✅ Only the first 5 messages (user + bot)
-      .map((m: any) => `${m.role}: ${m.text}`)
-      .join('\n');
-  
-    const prompt = `Summarize this chat in a maximum of 10 words. Use an objective tone and avoid referring to the user or assistant.\n${sample}`;
-    const title = await fetchGroqResponse(prompt);
-    return title?.split('\n')[0]?.trim().slice(0, 100) || 'Untitled Chat';
-  };
-  
+  const sample = messages
+    .slice(0, 5)
+    .map((m: any) => `${m.role}: ${m.text}`)
+    .join('\n');
+
+  const prompt = `Summarize this chat in a maximum of 10 words. Use an objective tone and avoid referring to the user or assistant.\n${sample}`;
+  const title = await fetchGroqResponse(prompt);
+  return title?.split('\n')[0]?.trim().slice(0, 100) || 'Untitled Chat';
+};
 
 export const saveChatToHistory = async (chatId: string, messages: any[]) => {
   const historyRaw = await AsyncStorage.getItem(HISTORY_KEY);
@@ -24,15 +24,25 @@ export const saveChatToHistory = async (chatId: string, messages: any[]) => {
 
   const title = alreadyHasTitle ? previous.title : await generateShortTitle(messages);
 
-  history[chatId] = {
+  const chatData = {
     ...previous,
     messages,
     timestamp: Date.now(),
     title,
   };
 
+  history[chatId] = chatData;
+
   await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+
+  // ✅ Push to Firebase if user is logged in
+  const uid = getUserId();
+  if (uid) {
+    await pushChatToRTDB(chatId, chatData);
+  }
 };
+
+  
 
 export const loadChatHistory = async (): Promise<Record<string, any>> => {
     const raw = await AsyncStorage.getItem(HISTORY_KEY);
@@ -69,12 +79,22 @@ export const clearChatHistory = async () => {
 };
 
 export const updateChatTitle = async (chatId: string, newTitle: string) => {
-  const history = await loadChatHistory();
-  if (history[chatId]) {
-    history[chatId].title = newTitle;
-    await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  }
-};
+    const history = await loadChatHistory();
+    if (history[chatId]) {
+      history[chatId].title = newTitle;
+      await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  
+      // 🔄 Sync updated title with RTDB
+      const userId = await getUserId();
+      if (userId) {
+        await pushChatToRTDB(chatId, {
+          ...history[chatId],
+          title: newTitle,
+        });
+      }
+    }
+  };
+  
 
 export const toggleFavoriteChat = async (chatId: string) => {
   const history = await loadChatHistory();

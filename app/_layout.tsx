@@ -37,6 +37,8 @@ import { encode as base64Encode } from 'base-64';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth'
 import { auth } from '../services/firebase'
 import Login from './login'; // Make sure this screen exists
+import AccountScreen from './account'; // Make sure this screen exists
+import { syncOnLogin } from "../utils/firebaseService";
 
 const Drawer = createDrawerNavigator();
 
@@ -476,8 +478,8 @@ function ScreenWithTopBar({ navigation, route, user }: any) {
     <View style={{ flex: 1, backgroundColor: darkMode ? '#000' : '#fff' }}>
       <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} />
       <TopBar onToggleTheme={toggleTheme} darkMode={darkMode} navigation={navigation} user={user} />
-      <Index key={chatId} chatId={chatId} />
-    </View>
+      <Index chatId={chatId + ''} />
+      </View>
   );
 }
 
@@ -502,6 +504,7 @@ function InnerLayout({ user }: { user: User | null }) {
         {(props) => <ScreenWithTopBar {...props} user={user} />}
       </Drawer.Screen>
       <Drawer.Screen name="Login" component={Login} />
+      <Drawer.Screen name="Account" component={AccountScreen} />
     </Drawer.Navigator>
   );
 }
@@ -509,9 +512,19 @@ function InnerLayout({ user }: { user: User | null }) {
 export default function RootLayout() {
   const [user, setUser] = useState<User | null>(null);
 
+  const [history, setHistory] = useState({}); // ✅ Define state
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return unsubscribe;
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const merged = await syncOnLogin();
+        setHistory(merged); // ✅ this setHistory is now defined
+      } else {
+        const local = await loadChatHistory();
+        setHistory(local);
+      }
+    });
+    return unsub;
   }, []);
 
   return (

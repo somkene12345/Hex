@@ -25,8 +25,12 @@ type Message = {
   role: string;
   text: string;
 };
+type ChatProps = {
+  chatId: string;
+  onUpdate?: (messages: any[], title: string) => void;
+};
 
-const Chat = ({ chatId }: { chatId?: string }) => {
+const Chat: React.FC<ChatProps> = ({ chatId, onUpdate }) => {
   const getStyles = (darkMode: boolean) => StyleSheet.create({
   container: {
     flex: 1,
