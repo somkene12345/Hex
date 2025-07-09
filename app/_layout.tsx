@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -12,7 +12,8 @@ import {
   Share,
   Platform,
   ScrollView,
-} from 'react-native';
+   Image
+   } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Index from './index';
 import { ThemeProvider, useTheme } from '../theme/ThemeContext';
@@ -33,6 +34,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard'; // Replace deprecated Clipboard
 import pako from 'pako'; // Import pako for compression
 import { encode as base64Encode } from 'base-64';
+import { onAuthStateChanged, signOut, User } from 'firebase/auth'
+import { auth } from '../services/firebase'
+import Login from './login'; // Make sure this screen exists
 
 const Drawer = createDrawerNavigator();
 
@@ -429,36 +433,58 @@ function CustomDrawerContent({ navigation, route }: any) {
   );
 }
 
-function TopBar({ onToggleTheme, darkMode, navigation }: any) {
+function TopBar({ onToggleTheme, darkMode, navigation, user }: any) {
   const styles = getDrawerStyles(darkMode);
+
   return (
     <View style={[styles.topBar, { backgroundColor: darkMode ? '#111' : '#f5f5f5' }]}>
       <TouchableOpacity onPress={() => navigation.openDrawer()}>
         <Ionicons name="menu" size={24} color={darkMode ? '#fff' : '#000'} style={{ marginRight: 12 }} />
       </TouchableOpacity>
+
       <Text style={[styles.topBarTitle, { color: darkMode ? '#fff' : '#000', flex: 1 }]}>Hex</Text>
+
       <TouchableOpacity onPress={onToggleTheme}>
-        <Ionicons name={darkMode ? 'sunny' : 'moon'} size={24} color={darkMode ? '#FFD700' : '#333'} />
+        <Ionicons name={darkMode ? 'sunny' : 'moon'} size={24} color={darkMode ? '#FFD700' : '#333'} style={{ marginRight: 12 }} />
       </TouchableOpacity>
+
+      {user ? (
+        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+          {user.photoURL ? (
+            <Image
+              source={{ uri: user.photoURL }}
+              style={{ width: 32, height: 32, borderRadius: 16 }}
+            />
+          ) : (
+            <Ionicons name="person-circle-outline" size={28} color={darkMode ? '#fff' : '#000'} />
+          )}
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+          <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 16 }}>Log in</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
 
-function ScreenWithTopBar({ navigation, route }: any) {
+function ScreenWithTopBar({ navigation, route, user }: any) {
   const { darkMode, toggleTheme } = useTheme();
   const chatId = route?.params?.chatId || 'default';
 
   return (
     <View style={{ flex: 1, backgroundColor: darkMode ? '#000' : '#fff' }}>
       <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} />
-      <TopBar onToggleTheme={toggleTheme} darkMode={darkMode} navigation={navigation} />
-      <Index key={chatId} chatId={chatId} /> {/* <== Force re-render with key */}
+      <TopBar onToggleTheme={toggleTheme} darkMode={darkMode} navigation={navigation} user={user} />
+      <Index key={chatId} chatId={chatId} />
     </View>
   );
 }
 
-function InnerLayout() {
+
+function InnerLayout({ user }: { user: User | null }) {
   const { darkMode } = useTheme();
+
   return (
     <Drawer.Navigator
       screenOptions={{
@@ -468,17 +494,29 @@ function InnerLayout() {
           width: 260,
         },
       }}
-      drawerContent={(props) => <CustomDrawerContent {...props} route={props.state.routes[0]} />}
+      drawerContent={(props) => (
+        <CustomDrawerContent {...props} route={props.state.routes[0]} user={user} />
+      )}
     >
-      <Drawer.Screen name="Home" component={ScreenWithTopBar} />
+      <Drawer.Screen name="Home">
+        {(props) => <ScreenWithTopBar {...props} user={user} />}
+      </Drawer.Screen>
+      <Drawer.Screen name="Login" component={Login} />
     </Drawer.Navigator>
   );
 }
 
 export default function RootLayout() {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, setUser);
+    return unsubscribe;
+  }, []);
+
   return (
     <ThemeProvider>
-      <InnerLayout />
+      <InnerLayout user={user} />
     </ThemeProvider>
   );
 }
