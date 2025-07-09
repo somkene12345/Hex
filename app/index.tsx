@@ -1,4 +1,3 @@
-// ./app/index.tsx
 import React, { useEffect, useState, useCallback } from "react";
 import { SafeAreaView } from "react-native";
 import Chat from "../components/Chat";
@@ -10,17 +9,15 @@ import { decode as base64Decode } from "base-64";
 
 const Index = ({ route }: any) => {
   const { darkMode } = useTheme();
+  const [chatTitle, setChatTitle] = useState("");
   const [localMessages, setLocalMessages] = useState<any[]>([]);
-  const [chatTitle, setChatTitle] = useState<string>("");
 
-  // Handle URL-based imports (compressed chat link)
   const queryParams =
     typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const queryChatId = queryParams?.get("chatId");
   const data = queryParams?.get("data");
   const chatId = route?.params?.chatId || queryChatId;
 
-  // Process incoming shared chat link
   useEffect(() => {
     const handleData = async () => {
       if (data && chatId) {
@@ -41,7 +38,6 @@ const Index = ({ route }: any) => {
     handleData();
   }, [data, chatId]);
 
-  // Listen for message updates via Chat component
   const onChatUpdate = useCallback(
     async (messages: any[], title: string) => {
       setLocalMessages(messages);
@@ -53,14 +49,12 @@ const Index = ({ route }: any) => {
         title,
         timestamp: Date.now(),
       });
-      console.log("🔁 Chat synced to RTDB", chatId);
     },
     [chatId]
   );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: darkMode ? "#000" : "#fff" }}>
-      {/* Chat component must accept onUpdate prop */}
       <Chat chatId={chatId} key={chatId} onUpdate={onChatUpdate} />
     </SafeAreaView>
   );

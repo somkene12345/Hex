@@ -38,7 +38,7 @@ import { onAuthStateChanged, signOut, User } from 'firebase/auth'
 import { auth } from '../services/firebase'
 import Login from './login'; // Make sure this screen exists
 import AccountScreen from './account'; // Make sure this screen exists
-import { syncOnLogin } from "../utils/firebaseService";
+import { syncOnLogin } from '../utils/firebaseService';
 
 const Drawer = createDrawerNavigator();
 
@@ -478,11 +478,10 @@ function ScreenWithTopBar({ navigation, route, user }: any) {
     <View style={{ flex: 1, backgroundColor: darkMode ? '#000' : '#fff' }}>
       <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} />
       <TopBar onToggleTheme={toggleTheme} darkMode={darkMode} navigation={navigation} user={user} />
-      <Index chatId={chatId + ''} />
-      </View>
+      <Index route={{ params: { chatId } }} />
+    </View>
   );
 }
-
 
 function InnerLayout({ user }: { user: User | null }) {
   const { darkMode } = useTheme();
@@ -496,9 +495,7 @@ function InnerLayout({ user }: { user: User | null }) {
           width: 260,
         },
       }}
-      drawerContent={(props) => (
-        <CustomDrawerContent {...props} route={props.state.routes[0]} user={user} />
-      )}
+      drawerContent={(props) => <CustomDrawerContent {...props} route={props.state.routes[0]} user={user} />}
     >
       <Drawer.Screen name="Home">
         {(props) => <ScreenWithTopBar {...props} user={user} />}
@@ -511,14 +508,14 @@ function InnerLayout({ user }: { user: User | null }) {
 
 export default function RootLayout() {
   const [user, setUser] = useState<User | null>(null);
-
-  const [history, setHistory] = useState({}); // ✅ Define state
+  const [history, setHistory] = useState({});
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
+      setUser(user);
       if (user) {
         const merged = await syncOnLogin();
-        setHistory(merged); // ✅ this setHistory is now defined
+        setHistory(merged);
       } else {
         const local = await loadChatHistory();
         setHistory(local);
