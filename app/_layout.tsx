@@ -37,8 +37,11 @@ import { encode as base64Encode } from 'base-64';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth'
 import { auth } from '../services/firebase'
 import Login from './login'; // Make sure this screen exists
+import SettingsScreen from './SettingsScreen'
 import AccountScreen from './account'; // Make sure this screen exists
 import { syncOnLogin } from '../utils/firebaseService';
+import { getGravatarUrl } from '../utils/getGravatarUrl';
+
 
 const Drawer = createDrawerNavigator();
 
@@ -436,34 +439,30 @@ function CustomDrawerContent({ navigation, route }: any) {
 }
 
 function TopBar({ onToggleTheme, darkMode, navigation, user }: any) {
-  const styles = getDrawerStyles(darkMode);
+  const profileUrl = user?.photoURL || getGravatarUrl(user?.email || '');
 
   return (
-    <View style={[styles.topBar, { backgroundColor: darkMode ? '#111' : '#f5f5f5' }]}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', padding: 12, backgroundColor: darkMode ? '#111' : '#f5f5f5' }}>
       <TouchableOpacity onPress={() => navigation.openDrawer()}>
         <Ionicons name="menu" size={24} color={darkMode ? '#fff' : '#000'} style={{ marginRight: 12 }} />
       </TouchableOpacity>
 
-      <Text style={[styles.topBarTitle, { color: darkMode ? '#fff' : '#000', flex: 1 }]}>Hex</Text>
+      <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 20, flex: 1 }}>Hex</Text>
 
       <TouchableOpacity onPress={onToggleTheme}>
         <Ionicons name={darkMode ? 'sunny' : 'moon'} size={24} color={darkMode ? '#FFD700' : '#333'} style={{ marginRight: 12 }} />
       </TouchableOpacity>
 
       {user ? (
-        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-          {user.photoURL ? (
-            <Image
-              source={{ uri: user.photoURL }}
-              style={{ width: 32, height: 32, borderRadius: 16 }}
-            />
-          ) : (
-            <Ionicons name="person-circle-outline" size={28} color={darkMode ? '#fff' : '#000'} />
-          )}
+        <TouchableOpacity onPress={() => navigation.navigate('Account')}>
+          <Image
+            source={{ uri: profileUrl }}
+            style={{ width: 32, height: 32, borderRadius: 16 }}
+          />
         </TouchableOpacity>
       ) : (
         <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 16 }}>Log in</Text>
+          <Text style={{ color: darkMode ? '#fff' : '#000' }}>Log in</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -502,6 +501,7 @@ function InnerLayout({ user }: { user: User | null }) {
       </Drawer.Screen>
       <Drawer.Screen name="Login" component={Login} />
       <Drawer.Screen name="Account" component={AccountScreen} />
+      <Drawer.Screen name="Settings" component={SettingsScreen} />
     </Drawer.Navigator>
   );
 }
