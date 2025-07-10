@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -38,7 +38,6 @@ import { onAuthStateChanged, signOut, User } from 'firebase/auth'
 import { auth } from '../services/firebase'
 import Login from './login'; // Make sure this screen exists
 import SettingsScreen from './SettingsScreen'
-import AccountScreen from './account'; // Make sure this screen exists
 import { syncOnLogin } from '../utils/firebaseService';
 import { getGravatarUrl } from '../utils/getGravatarUrl';
 
@@ -201,21 +200,29 @@ function CustomDrawerContent({ navigation, route }: any) {
       return;
     }
   
+    const baseUrl = 'https://hex-jet.vercel.app';
+  
     try {
-      // Compress properly into Uint8Array
-      const compressed = pako.deflate(
-        JSON.stringify({
-          title: chat.title,
-          timestamp: chat.timestamp,
-          messages: chat.messages,
-        })
-      );
+      const user = auth.currentUser;
   
-      // Encode Uint8Array to base64
-      const base64Data = base64Encode(String.fromCharCode(...compressed));
+      let shareableLink = '';
   
-      const baseUrl = 'https://hex-jet.vercel.app';
-      const shareableLink = `${baseUrl}?chatId=${menuChatId}&data=${encodeURIComponent(base64Data)}`;
+      if (user) {
+        // Use `uuid` or fallback to timestamp
+        const uuid = chat.uuid || chat.timestamp.toString();
+        shareableLink = `${baseUrl}?chatId=${menuChatId}&uuid=${uuid}`;
+      } else {
+        // Compress for guest share
+        const compressed = pako.deflate(
+          JSON.stringify({
+            title: chat.title,
+            timestamp: chat.timestamp,
+            messages: chat.messages,
+          })
+        );
+        const base64Data = base64Encode(String.fromCharCode(...compressed));
+        shareableLink = `${baseUrl}?chatId=${menuChatId}&data=${encodeURIComponent(base64Data)}`;
+      }
   
       if (navigator.share) {
         await navigator.share({
@@ -402,16 +409,21 @@ function CustomDrawerContent({ navigation, route }: any) {
       </Modal>
 
       <Modal visible={showDeleteModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: darkMode ? '#222' : '#fff' }]}>
-            <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 16, marginBottom: 12 }}>
-              Are you sure you want to delete this chat?
-            </Text>
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-              <TouchableOpacity onPress={() => setShowDeleteModal(false)} style={{ marginRight: 16 }}>
-                <Text style={{ color: '#888' }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0008' }}>
+    <View
+      style={{
+        backgroundColor: darkMode ? '#222' : '#fff',
+        padding: 20,
+        borderRadius: 12,
+        width: '80%',
+        alignItems: 'center',
+      }}
+    >
+      <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 18, marginBottom: 20, textAlign: 'center' }}>
+        Are you sure you want to delete this chat?
+      </Text>
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+      <TouchableOpacity
                 onPress={async () => {
                   if (!selectedChatId) return;
                   try {
@@ -427,43 +439,73 @@ function CustomDrawerContent({ navigation, route }: any) {
                   }
                   setShowDeleteModal(false);
                 }}
+                style={{ backgroundColor: 'red', padding: 10, borderRadius: 8, flex: 1 }}
               >
-                <Text style={{ color: 'red' }}>Delete</Text>
+                <Text style={{ color: '#fff', textAlign: 'center' }}>Delete</Text>
               </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        <TouchableOpacity
+          onPress={() => setShowDeleteModal(false)}
+          style={{ backgroundColor: '#666', padding: 10, borderRadius: 8, flex: 1 }}
+        >
+          <Text style={{ color: '#fff', textAlign: 'center' }}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
     </View>
   );
 }
 
-function TopBar({ onToggleTheme, darkMode, navigation, user }: any) {
-  const profileUrl = user?.photoURL || getGravatarUrl(user?.email || '');
+function TopBar({ onToggleTheme, darkMode, navigation }: any) {
+  const styles = getDrawerStyles(darkMode);
+
+  const user = auth.currentUser;
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const toggleDropdown = () => setShowDropdown(!showDropdown);
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    setShowDropdown(false);
+    navigation.navigate('Home');
+  };
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', padding: 12, backgroundColor: darkMode ? '#111' : '#f5f5f5' }}>
+    <View style={[styles.topBar, { backgroundColor: darkMode ? '#111' : '#f5f5f5' }]}>
       <TouchableOpacity onPress={() => navigation.openDrawer()}>
         <Ionicons name="menu" size={24} color={darkMode ? '#fff' : '#000'} style={{ marginRight: 12 }} />
       </TouchableOpacity>
 
-      <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 20, flex: 1 }}>Hex</Text>
+      <Text style={[styles.topBarTitle, { color: darkMode ? '#fff' : '#000' }]}>Hex</Text>
 
-      <TouchableOpacity onPress={onToggleTheme}>
-        <Ionicons name={darkMode ? 'sunny' : 'moon'} size={24} color={darkMode ? '#FFD700' : '#333'} style={{ marginRight: 12 }} />
+      <TouchableOpacity onPress={onToggleTheme} style={{ marginHorizontal: 10 }}>
+        <Ionicons name={darkMode ? 'sunny' : 'moon'} size={24} color={darkMode ? '#FFD700' : '#333'} />
       </TouchableOpacity>
 
       {user ? (
-        <TouchableOpacity onPress={() => navigation.navigate('Account')}>
+        <TouchableOpacity onPress={toggleDropdown}>
           <Image
-            source={{ uri: profileUrl }}
+            source={{ uri: getGravatarUrl(user.email || '') }}
             style={{ width: 32, height: 32, borderRadius: 16 }}
           />
         </TouchableOpacity>
       ) : (
         <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={{ color: darkMode ? '#fff' : '#000' }}>Log in</Text>
+          <Text style={{ color: darkMode ? '#fff' : '#000' }}>Login</Text>
         </TouchableOpacity>
+      )}
+
+      {/* Dropdown menu */}
+      {showDropdown && (
+        <View style={[styles.dropdown, { backgroundColor: darkMode ? '#222' : '#fff' }]}>
+          <TouchableOpacity onPress={() => { navigation.navigate('Settings'); setShowDropdown(false); }}>
+            <Text style={styles.dropdownItem}>Settings</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleLogout}>
+            <Text style={[styles.dropdownItem, { color: 'red' }]}>Sign out</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -500,7 +542,6 @@ function InnerLayout({ user }: { user: User | null }) {
         {(props) => <ScreenWithTopBar {...props} user={user} />}
       </Drawer.Screen>
       <Drawer.Screen name="Login" component={Login} />
-      <Drawer.Screen name="Account" component={AccountScreen} />
       <Drawer.Screen name="Settings" component={SettingsScreen} />
     </Drawer.Navigator>
   );
@@ -560,4 +601,17 @@ const getDrawerStyles = (darkMode: boolean) =>
     modalContent: { position: 'absolute', top: 120, right: 20, padding: 8, borderRadius: 6, elevation: 10 },
     menuOption: { paddingVertical: 10, paddingHorizontal: 12 },
     menuText: { fontSize: 16, color: darkMode ? '#fff' : '#000' },
+      dropdown: {
+    position: 'absolute',
+    top: 90,
+    right: 10,
+    padding: 10,
+    borderRadius: 8,
+    elevation: 5,
+    zIndex: 999,
+  },
+  dropdownItem: {
+    paddingVertical: 8,
+    fontSize: 16,
+  },
   });

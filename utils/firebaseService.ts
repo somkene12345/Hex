@@ -2,15 +2,45 @@ import { db, auth } from '../services/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ref, set, get, child } from 'firebase/database';
 import { loadChatHistory, saveChatToHistory } from './chatStorage';
+import { v4 as uuidv4 } from 'uuid';
+
 
 export const getUserId = () => auth.currentUser?.uid || null;
 
-export const pushChatToRTDB = async (chatId: string, data: any) => {
-  const uid = getUserId();
-  if (!uid) return;
+export const pushChatToRTDB = async (
+  chatId: string,
+  chatData: { messages: any[]; title: string; timestamp: number; uuid?: string }
+) => {
+  const user = auth.currentUser;
+  if (!user) return;
 
-  const userRef = ref(db, `users/${uid}/chats/${chatId}`);
-  await set(userRef, data);
+  const uuid = chatData.uuid || uuidv4();
+  await set(ref(db, `users/${user.uid}/chats/${chatId}`), {
+    ...chatData,
+    uuid,
+  });
+
+  // Also store by uuid for shareable links
+  await set(ref(db, `chats/${uuid}`), {
+    ...chatData,
+    uid: user.uid,
+  });
+
+  return uuid;
+};
+
+export const getChatByUUID = async (uuid: string) => {
+  try {
+    const snapshot = await get(ref(db, `chats/${uuid}`));
+    if (snapshot.exists()) {
+      return snapshot.val();
+    } else {
+      return null;
+    }
+  } catch (e) {
+    console.error("❌ Error getting chat by UUID:", e);
+    return null;
+  }
 };
 
 export const syncOnLogin = async () => {

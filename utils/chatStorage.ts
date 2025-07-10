@@ -15,32 +15,25 @@ const generateShortTitle = async (messages: any[]) => {
   return title?.split('\n')[0]?.trim().slice(0, 100) || 'Untitled Chat';
 };
 
-export const saveChatToHistory = async (chatId: string, messages: any[]) => {
-  const historyRaw = await AsyncStorage.getItem(HISTORY_KEY);
-  const history = historyRaw ? JSON.parse(historyRaw) : {};
-
-  const previous = history[chatId] || {};
-  const alreadyHasTitle = !!previous.title;
-
-  const title = alreadyHasTitle ? previous.title : await generateShortTitle(messages);
-
-  const chatData = {
-    ...previous,
-    messages,
-    timestamp: Date.now(),
-    title,
+export const saveChatToHistory = async (chatId: string, messages: any[], uuid?: string) => {
+    const historyRaw = await AsyncStorage.getItem(HISTORY_KEY);
+    const history = historyRaw ? JSON.parse(historyRaw) : {};
+  
+    const previous = history[chatId] || {};
+    const alreadyHasTitle = !!previous.title;
+    const title = alreadyHasTitle ? previous.title : await generateShortTitle(messages);
+  
+    history[chatId] = {
+      ...previous,
+      messages,
+      timestamp: Date.now(),
+      title,
+      uuid: uuid || previous.uuid || undefined,
+    };
+  
+    await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(history));
   };
-
-  history[chatId] = chatData;
-
-  await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-
-  // ✅ Push to Firebase if user is logged in
-  const uid = getUserId();
-  if (uid) {
-    await pushChatToRTDB(chatId, chatData);
-  }
-};
+  
 
   
 
