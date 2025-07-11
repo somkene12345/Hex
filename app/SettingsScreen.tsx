@@ -70,6 +70,7 @@ export default function SettingsScreen() {
         onChangeText={setName}
         style={{
           borderWidth: 1,
+          borderColor: darkMode ? '#444' : '#ccc',
           marginVertical: 10,
           padding: 8,
           color: darkMode ? '#fff' : '#000',
@@ -85,6 +86,7 @@ export default function SettingsScreen() {
         onChangeText={setNewPass}
         style={{
           borderWidth: 1,
+          borderColor: darkMode ? '#444' : '#ccc',
           marginVertical: 10,
           padding: 8,
           color: darkMode ? '#fff' : '#000',
