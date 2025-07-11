@@ -12,7 +12,8 @@ import {
   Share,
   Platform,
   ScrollView,
-   Image
+   Image,
+   Pressable,
    } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Index from './index';
@@ -459,54 +460,76 @@ function CustomDrawerContent({ navigation, route }: any) {
 
 function TopBar({ onToggleTheme, darkMode, navigation }: any) {
   const styles = getDrawerStyles(darkMode);
-
   const user = auth.currentUser;
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
 
-  const toggleDropdown = () => setShowDropdown(!showDropdown);
+  const toggleDropdown = () => {
+    setModalVisible(!modalVisible);
+  };
 
   const handleLogout = async () => {
+    setModalVisible(false);
     await auth.signOut();
-    setShowDropdown(false);
-    navigation.navigate('Home');
+    navigation.navigate('Login' as never);
+  };
+
+  const goToSettings = () => {
+    setModalVisible(false);
+    navigation.navigate('Settings' as never);
   };
 
   return (
     <View style={[styles.topBar, { backgroundColor: darkMode ? '#111' : '#f5f5f5' }]}>
       <TouchableOpacity onPress={() => navigation.openDrawer()}>
-        <Ionicons name="menu" size={24} color={darkMode ? '#fff' : '#000'} style={{ marginRight: 12 }} />
+        <Ionicons
+          name="menu"
+          size={24}
+          color={darkMode ? '#fff' : '#000'}
+          style={{ marginRight: 12 }}
+        />
       </TouchableOpacity>
 
-      <Text style={[styles.topBarTitle, { color: darkMode ? '#fff' : '#000' }]}>Hex</Text>
+      <Text style={[styles.topBarTitle, { color: darkMode ? '#fff' : '#000', flex: 1 }]}>Hex</Text>
 
-      <TouchableOpacity onPress={onToggleTheme} style={{ marginHorizontal: 10 }}>
+      <TouchableOpacity onPress={onToggleTheme} style={{ marginRight: 12 }}>
         <Ionicons name={darkMode ? 'sunny' : 'moon'} size={24} color={darkMode ? '#FFD700' : '#333'} />
       </TouchableOpacity>
 
       {user ? (
         <TouchableOpacity onPress={toggleDropdown}>
-          <Image
-            source={{ uri: getGravatarUrl(user.email || '') }}
-            style={{ width: 32, height: 32, borderRadius: 16 }}
-          />
+          {user.photoURL ? (
+            <Image
+              source={{ uri: user.photoURL }}
+              style={{ width: 32, height: 32, borderRadius: 16 }}
+            />
+          ) : (
+            <Ionicons name="person-circle-outline" size={32} color={darkMode ? '#fff' : '#000'} />
+          )}
         </TouchableOpacity>
       ) : (
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={{ color: darkMode ? '#fff' : '#000' }}>Login</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Login' as never)}>
+          <Text style={{ color: darkMode ? '#fff' : '#000', fontSize: 16 }}>Log In</Text>
         </TouchableOpacity>
       )}
 
-      {/* Dropdown menu */}
-      {showDropdown && (
-        <View style={[styles.dropdown, { backgroundColor: darkMode ? '#222' : '#fff' }]}>
-          <TouchableOpacity onPress={() => { navigation.navigate('Settings'); setShowDropdown(false); }}>
-            <Text style={styles.dropdownItem}>Settings</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleLogout}>
-            <Text style={[styles.dropdownItem, { color: 'red' }]}>Sign out</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* Modal dropdown menu */}
+      <Modal
+        visible={modalVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <Pressable style={styles.acctmodalOverlay} onPress={() => setModalVisible(false)}>
+          <View style={[styles.dropdown, { backgroundColor: darkMode ? '#222' : '#fff' }]}>
+            <TouchableOpacity onPress={goToSettings} style={styles.dropdownItem}>
+              <Text style={{ color: darkMode ? '#fff' : '#000' }}>Settings</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout} style={styles.dropdownItem}>
+              <Text style={{ color: 'red' }}>Sign Out</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -575,15 +598,17 @@ export default function RootLayout() {
 const getDrawerStyles = (darkMode: boolean) =>
   StyleSheet.create({
     topBar: {
-      height: 56,
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: '#ccc',
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      elevation: 4,
+      zIndex: 100,
     },
-    topBarTitle: { fontSize: 20, fontWeight: 'bold' },
+    topBarTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+    },
     drawerContainer: {
       flex: 1,
       backgroundColor: darkMode ? '#111' : '#fff',
@@ -598,6 +623,14 @@ const getDrawerStyles = (darkMode: boolean) =>
     },
     newChatText: { color: darkMode ? '#fff' : '#000', fontSize: 16, textAlign: 'center' },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' },
+    acctmodalOverlay: {
+      flex: 1,
+      justifyContent: 'flex-start',
+      alignItems: 'flex-end',
+      paddingTop: 50,
+      paddingRight: 10,
+      backgroundColor: 'rgba(0,0,0,0.3)',
+    },
     modalContent: { position: 'absolute', top: 120, right: 20, padding: 8, borderRadius: 6, elevation: 10 },
     menuOption: { paddingVertical: 10, paddingHorizontal: 12 },
     menuText: { fontSize: 16, color: darkMode ? '#fff' : '#000' },
