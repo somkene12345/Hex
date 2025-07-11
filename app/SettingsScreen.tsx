@@ -77,7 +77,7 @@ export default function SettingsScreen() {
         }}
         placeholderTextColor={darkMode ? '#666' : '#888'}
       />
-      <TouchableOpacity onPress={changeName}><Text>Change Name</Text></TouchableOpacity>
+      <TouchableOpacity onPress={changeName}><Text style={{color: darkMode ? '#fff' : '#000',}}>Change Name</Text></TouchableOpacity>
 
       <TextInput
         placeholder="New Password"
@@ -93,7 +93,7 @@ export default function SettingsScreen() {
         }}
         placeholderTextColor={darkMode ? '#666' : '#888'}
       />
-      <TouchableOpacity onPress={changePassword}><Text>Change Password</Text></TouchableOpacity>
+      <TouchableOpacity onPress={changePassword}><Text style={{color: darkMode ? '#fff' : '#000',}}>Change Password</Text></TouchableOpacity>
 
       <TouchableOpacity onPress={deleteChats}>
         <Text style={{ color: '#FFA500', marginTop: 20 }}>Delete All Chat History</Text>

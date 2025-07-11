@@ -497,7 +497,7 @@ function TopBar({ onToggleTheme, darkMode, navigation }: any) {
 
       {user ? (
         <TouchableOpacity onPress={toggleDropdown}>
-          {user.photoURL ? (
+          {getGravatarUrl(user.email!) ? (
             <Image
           source={{ uri: getGravatarUrl(user.email!) }}
               style={{ width: 32, height: 32, borderRadius: 16 }}
