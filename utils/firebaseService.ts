@@ -4,9 +4,15 @@ import { ref, set, get, child } from 'firebase/database';
 import { loadChatHistory, saveChatToHistory } from './chatStorage';
 import { v4 as uuidv4 } from 'uuid';
 
-
+// 🔐 Get current user ID
 export const getUserId = () => auth.currentUser?.uid || null;
 
+/**
+ * ☁️ Push chat to Realtime Database
+ * Saves under:
+ *   - users/{uid}/chats/{chatId}
+ *   - chats/{uuid}
+ */
 export const pushChatToRTDB = async (
   chatId: string,
   chatData: { messages: any[]; title: string; timestamp: number; uuid?: string }
@@ -15,20 +21,25 @@ export const pushChatToRTDB = async (
   if (!user) return;
 
   const uuid = chatData.uuid || uuidv4();
-  await set(ref(db, `users/${user.uid}/chats/${chatId}`), {
+
+  const chatPayload = {
     ...chatData,
     uuid,
-  });
+  };
 
-  // Also store by uuid for shareable links
+  // Save under user
+  await set(ref(db, `users/${user.uid}/chats/${chatId}`), chatPayload);
+
+  // Save by UUID for shareable links
   await set(ref(db, `chats/${uuid}`), {
-    ...chatData,
+    ...chatPayload,
     uid: user.uid,
   });
 
   return uuid;
 };
 
+// 🔎 Fetch chat using a public UUID
 export const getChatByUUID = async (uuid: string) => {
   try {
     const snapshot = await get(ref(db, `chats/${uuid}`));
@@ -38,30 +49,43 @@ export const getChatByUUID = async (uuid: string) => {
       return null;
     }
   } catch (e) {
-    console.error("❌ Error getting chat by UUID:", e);
+    console.error('❌ Error getting chat by UUID:', e);
     return null;
   }
 };
 
+/**
+ * 🔄 Sync all Firebase chats on login
+ * Merges local and remote chats, keeping the longer one.
+ * Returns merged history object.
+ */
 export const syncOnLogin = async () => {
   const uid = getUserId();
   if (!uid) return {};
 
-  const snapshot = await get(child(ref(db), `users/${uid}/chats`));
-  const rtdbChats = snapshot.exists() ? snapshot.val() : {};
-  const localChats = await loadChatHistory();
+  try {
+    const snapshot = await get(child(ref(db), `users/${uid}/chats`));
+    const rtdbChats = snapshot.exists() ? snapshot.val() : {};
+    const localChats = await loadChatHistory();
 
-  const merged: Record<string, any> = { ...localChats };
+    const merged: Record<string, any> = { ...localChats };
 
-  for (const id in rtdbChats) {
-    if (
-      !localChats[id] ||
-      (rtdbChats[id].messages?.length || 0) > (localChats[id]?.messages?.length || 0)
-    ) {
-      merged[id] = rtdbChats[id];
-      await saveChatToHistory(id, rtdbChats[id].messages);
+    for (const id in rtdbChats) {
+      const remote = rtdbChats[id];
+      const local = localChats[id];
+
+      const remoteLength = remote?.messages?.length || 0;
+      const localLength = local?.messages?.length || 0;
+
+      if (!local || remoteLength > localLength) {
+        merged[id] = remote;
+        await saveChatToHistory(id, remote.messages);
+      }
     }
-  }
 
-  return merged;
+    return merged;
+  } catch (err) {
+    console.error('❌ Failed to sync from RTDB:', err);
+    return {};
+  }
 };

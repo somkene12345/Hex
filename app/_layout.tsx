@@ -41,6 +41,7 @@ import Login from './login'; // Make sure this screen exists
 import SettingsScreen from './SettingsScreen'
 import { syncOnLogin } from '../utils/firebaseService';
 import { getGravatarUrl } from '../utils/getGravatarUrl';
+import { getUserId, pushChatToRTDB } from '../utils/firebaseService';
 
 
 const Drawer = createDrawerNavigator();
@@ -194,26 +195,34 @@ function CustomDrawerContent({ navigation, route }: any) {
     }
   };
 
-  const handleShare = async () => {
-    const chat = history[menuChatId!];
+  const handleShare = async (menuChatId: string | null | undefined, history: Record<string, any>) => {
+    if (!menuChatId || !history[menuChatId]) {
+      Alert.alert('Error', 'No chat selected for sharinChat not found.');
+      return;
+    }
+    const chat = history[menuChatId];
     if (!chat) {
       Alert.alert('Error', 'Chat not found.');
       return;
     }
-  
-    const baseUrl = 'https://hex-jet.vercel.app';
-  
+    const baseUrl = 'https://hex-jet.vercel.app'; // Update if changed
+
     try {
-      const user = auth.currentUser;
-  
       let shareableLink = '';
   
-      if (user) {
-        // Use `uuid` or fallback to timestamp
-        const uuid = chat.uuid || chat.timestamp.toString();
-        shareableLink = `${baseUrl}?chatId=${menuChatId}&uuid=${uuid}`;
+      // ✅ If signed in, try to get or push UUID
+      const uid = getUserId();
+      if (uid) {
+        const uuid = chat.uuid || (await pushChatToRTDB(menuChatId, {
+          messages: chat.messages,
+          title: chat.title,
+          timestamp: chat.timestamp || Date.now(),
+          uuid: chat.uuid, // might already exist
+        }));
+  
+        shareableLink = `${baseUrl}?uuid=${uuid}`;
       } else {
-        // Compress for guest share
+        // ⚠️ Anonymous/compressed fallback
         const compressed = pako.deflate(
           JSON.stringify({
             title: chat.title,
@@ -221,10 +230,12 @@ function CustomDrawerContent({ navigation, route }: any) {
             messages: chat.messages,
           })
         );
+  
         const base64Data = base64Encode(String.fromCharCode(...compressed));
         shareableLink = `${baseUrl}?chatId=${menuChatId}&data=${encodeURIComponent(base64Data)}`;
       }
   
+      // Share or copy
       if (navigator.share) {
         await navigator.share({
           title: chat.title || 'Chat Export',
@@ -290,7 +301,7 @@ function CustomDrawerContent({ navigation, route }: any) {
         break;
 
       case 'share':
-        await handleShare();
+        await handleShare(menuChatId, history);
         break;
 
       case 'delete':
@@ -440,13 +451,13 @@ function CustomDrawerContent({ navigation, route }: any) {
                   }
                   setShowDeleteModal(false);
                 }}
-                style={{ backgroundColor: 'red', padding: 10, borderRadius: 8, flex: 1 }}
+                style={{ backgroundColor: 'red', paddingVertical: 5, paddingHorizontal: 12.5, borderRadius: 8, flex: 1 }}
               >
                 <Text style={{ color: '#fff', textAlign: 'center' }}>Delete</Text>
               </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setShowDeleteModal(false)}
-          style={{ backgroundColor: '#666', padding: 10, borderRadius: 8, flex: 1 }}
+          style={{ backgroundColor: '#666', paddingVertical: 5, paddingHorizontal: 12.5, borderRadius: 8, flex: 1 }}
         >
           <Text style={{ color: '#fff', textAlign: 'center' }}>Cancel</Text>
         </TouchableOpacity>
